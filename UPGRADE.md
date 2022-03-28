@@ -10,7 +10,7 @@ Version 5.6.0 includes support for azurerm 2.99 which requires your attention if
   - The ```features``` block is deprecated, favor of use ```connectivity_logs_enabled```, ```messaging_logs_enabled```, ```live_trace_enabled``` and ```service_mode``` instead. Module has been updated to reflect that. You must update the settings in your configuration file accordingly.
 
 - data factory:
-  - The `data_factory_name` reference method is deprecated in favour of `data_factory_id` and will be removed in version 3.0 of the AzureRM provider.
+  - The `data_factory_name` reference method is deprecated in favour of `data_factory_id` and has been removed.
   - If you are referencing literals for data factory name inside ```data_factory.datasets``` (azure_blob, cosmosdb_sqlapi, delimited_text, http, json, mysql, postgresql, sql_server_table) or ```data_factory.linked_services``` (azure_blob_storage, cosmosdb, web, mysql, postgresql, key_vault) you will need to update to use the ```id``` attribute instead of ```name```.
   - **If you are referencing objects with ```key``` and ```lz_key``` inside your model, you dont need to update anything.**
 
@@ -21,8 +21,46 @@ Version 5.6.0 includes support for azurerm 2.99 which requires your attention if
   - **If you are referencing objects with ```key``` and ```lz_key``` inside your model, you dont need to update anything.**
 
 - apim:
-  - The ```proxy``` block is deprecated in favour of `gateway` and will be removed in version 3.0 of the AzureRM provider.
-  - Azurerm 2.98 does not have ```gateway``` implemented yet, even with ```ARM_THREEPOINTZERO_BETA_RESOURCES=true```
+  - The ```proxy``` block is deprecated in favour of `gateways` to support multiple gateways. See example apim/109 
+
+from
+```hcl
+api_management_custom_domain = {
+  apimcd1 = {
+    api_management = {
+      key = "apim1"
+    }
+    proxy = {
+      host_name = "api.example.com"
+      key_vault_certificate = {
+        certificate_request_key = "example"
+      }
+    }
+  }
+}
+```
+
+to 
+
+```hcl
+api_management_custom_domain = {
+  apimcd1 = {
+    api_management = {
+      key = "apim1"
+    }
+    gateways = {
+      gw1 = {
+        {
+          host_name = "api.example.com"
+          key_vault_certificate = {
+            certificate_request_key = "example"
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 - azure virtual desktop:
   - azurerm 2.97 addedd support for new token method - azurerm_virtual_desktop_host_pool_registration_info - updated and should be transparent.

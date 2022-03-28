@@ -128,12 +128,12 @@ module "public_ip_addresses" {
   global_settings            = local.global_settings
   sku                        = try(each.value.sku, "Basic")
   allocation_method          = try(each.value.allocation_method, "Dynamic")
-  ip_version                 = try(each.value.ip_version, "IPv4")
-  idle_timeout_in_minutes    = try(each.value.idle_timeout_in_minutes, null)
+  base_tags                  = try(local.global_settings.inherit_tags, false) ? local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags : {}
+  diagnostic_profiles        = try(each.value.diagnostic_profiles, {})
+  diagnostics                = local.combined_diagnostics
   domain_name_label          = try(each.value.domain_name_label, null)
-  reverse_fqdn               = try(each.value.reverse_fqdn, null)
   generate_domain_name_label = try(each.value.generate_domain_name_label, false)
-  tags                       = try(each.value.tags, null)
+  idle_timeout_in_minutes    = try(each.value.idle_timeout_in_minutes, null)
   ip_tags                    = try(each.value.ip_tags, null)
   public_ip_prefix_id        = can(each.value.public_ip_prefix.key) ? local.combined_objects_public_ip_prefixes[try(each.value.public_ip_prefix.lz_key, local.client_config.landingzone_key)][each.value.public_ip_prefix.key].id : try(each.value.public_ip_prefix_id, null)
   zones = coalesce(
