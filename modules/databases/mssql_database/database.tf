@@ -33,34 +33,34 @@ resource "azurerm_mssql_database" "mssqldb" {
   zone_redundant              = try(var.settings.zone_redundant, null)
 
   dynamic "threat_detection_policy" {
-    for_each = lookup(var.settings, "threat_detection_policy", {}) == {} ? [] : [1]
+    for_each = can(var.settings.threat_detection_policy) ? [var.settings.threat_detection_policy] : []
 
     content {
-      state                      = var.settings.threat_detection_policy.state
-      disabled_alerts            = try(var.settings.threat_detection_policy.disabled_alerts, null)
-      email_account_admins       = try(var.settings.threat_detection_policy.email_account_admins, null)
-      email_addresses            = try(var.settings.threat_detection_policy.email_addresses, null)
-      retention_days             = try(var.settings.threat_detection_policy.retention_days, null)
+      state                      = threat_detection_policy.value.state
+      disabled_alerts            = try(threat_detection_policy.value.disabled_alerts, null)
+      email_account_admins       = try(threat_detection_policy.value.email_account_admins, null)
+      email_addresses            = try(threat_detection_policy.value.email_addresses, null)
+      retention_days             = try(threat_detection_policy.value.retention_days, null)
       storage_endpoint           = try(data.azurerm_storage_account.mssqldb_tdp.0.primary_blob_endpoint, null)
       storage_account_access_key = try(data.azurerm_storage_account.mssqldb_tdp.0.primary_access_key, null)
-      use_server_default         = try(var.settings.threat_detection_policy.use_server_default, null)
     }
   }
 
   dynamic "short_term_retention_policy" {
-    for_each = lookup(var.settings, "short_term_retention_policy", {}) == {} ? [] : [1]
+    for_each = can(var.settings.short_term_retention_policy) ? [var.settings.short_term_retention_policy] : []
     content {
-      retention_days = try(var.settings.short_term_retention_policy.retention_days, null)
+      retention_days           = try(short_term_retention_policy.value.retention_days, null)
+      backup_interval_in_hours = try(short_term_retention_policy.value.backup_interval_in_hours, null)
     }
   }
 
   dynamic "long_term_retention_policy" {
-    for_each = lookup(var.settings, "long_term_retention_policy", {}) == {} ? [] : [1]
+    for_each = can(var.settings.long_term_retention_policy) ? [var.settings.long_term_retention_policy] : []
     content {
-      weekly_retention  = try(var.settings.long_term_retention_policy.weekly_retention, null)
-      monthly_retention = try(var.settings.long_term_retention_policy.monthly_retention, null)
-      yearly_retention  = try(var.settings.long_term_retention_policy.yearly_retention, null)
-      week_of_year      = try(var.settings.long_term_retention_policy.week_of_year, null)
+      weekly_retention  = try(long_term_retention_policy.value.weekly_retention, null)
+      monthly_retention = try(long_term_retention_policy.value.monthly_retention, null)
+      yearly_retention  = try(long_term_retention_policy.value.yearly_retention, null)
+      week_of_year      = try(long_term_retention_policy.value.week_of_year, null)
     }
   }
 
