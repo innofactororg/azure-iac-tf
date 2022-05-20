@@ -206,6 +206,44 @@ resource "azurerm_storage_account" "stg" {
     }
   }
 
+  dynamic "share_properties" {
+    for_each = can(var.storage_account.share_properties) ? [1] : []
+
+    content {
+      dynamic "cors_rule" {
+        for_each = can(var.storage_account.share_properties.cors_rule) ? [1] : []
+
+        content {
+          allowed_headers    = var.storage_account.share_properties.cors_rule.allowed_headers
+          allowed_methods    = var.storage_account.share_properties.cors_rule.allowed_methods
+          allowed_origins    = var.storage_account.share_properties.cors_rule.allowed_origins
+          exposed_headers    = var.storage_account.share_properties.cors_rule.exposed_headers
+          max_age_in_seconds = var.storage_account.share_properties.cors_rule.max_age_in_seconds
+        }
+      }
+
+      dynamic "retention_policy" {
+        for_each = can(var.storage_account.share_properties.retention_policy) ? [1] : []
+
+        content {
+          days = try(var.storage_account.share_properties.retention_policy.days, 7)
+        }
+      }
+
+      dynamic "smb" {
+        for_each = can(var.storage_account.share_properties.smb) ? [1] : []
+
+        content {
+          versions                        = try(var.storage_account.share_properties.smb.versions, null)
+          authentication_types            = try(var.storage_account.share_properties.smb.authentication_types, null)
+          kerberos_ticket_encryption_type = try(var.storage_account.share_properties.smb.kerberos_ticket_encryption_type, null)
+          channel_encryption_type         = try(var.storage_account.share_properties.smb.channel_encryption_type, null)
+        }
+      }
+
+    }
+  }
+
   lifecycle {
     ignore_changes = [
       location, resource_group_name
