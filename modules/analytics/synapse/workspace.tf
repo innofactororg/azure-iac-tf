@@ -23,6 +23,10 @@ resource "azurerm_synapse_workspace" "ws" {
   managed_resource_group_name          = try(var.settings.managed_resource_group_name, null)
   tags                                 = merge(local.tags, try(var.settings.tags, null))
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   dynamic "aad_admin" {
     for_each = try(var.settings.aad_admin, null) != null ? [var.settings.aad_admin] : []
 

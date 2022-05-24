@@ -43,7 +43,6 @@ resource "null_resource" "aks_registration_preview" {
   }
 }
 ### AKS cluster resource
-
 resource "azurerm_kubernetes_cluster" "aks" {
   depends_on = [
     null_resource.aks_registration_preview
@@ -54,7 +53,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
   role_based_access_control_enabled = try(var.settings.role_based_access_control_enabled, null)
 
   default_node_pool {
-    availability_zones           = try(var.settings.default_node_pool.availability_zones, null)
     enable_auto_scaling          = try(var.settings.default_node_pool.enable_auto_scaling, false)
     enable_host_encryption       = try(var.settings.default_node_pool.enable_host_encryption, false)
     enable_node_public_ip        = try(var.settings.default_node_pool.enable_node_public_ip, false)
@@ -76,6 +74,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type                         = try(var.settings.default_node_pool.type, "VirtualMachineScaleSets")
     ultra_ssd_enabled            = try(var.settings.default_node_pool.ultra_ssd_enabled, false)
     vm_size                      = var.settings.default_node_pool.vm_size
+    zones                        = can(var.settings.default_node_pool.availability_zones) || can(var.settings.default_node_pool.zones) == false ? try(var.settings.default_node_pool.availability_zones, null) : var.settings.default_node_pool.zones
 
     pod_subnet_id  = can(var.settings.default_node_pool.pod_subnet_key) == false || can(var.settings.default_node_pool.pod_subnet.key) == false || can(var.settings.default_node_pool.pod_subnet_id) || can(var.settings.default_node_pool.pod_subnet.resource_id) ? try(var.settings.default_node_pool.pod_subnet_id, var.settings.default_node_pool.pod_subnet.resource_id, null) : var.vnets[try(var.settings.lz_key, var.client_config.landingzone_key)][var.settings.vnet_key].subnets[try(var.settings.default_node_pool.pod_subnet_key, var.settings.default_node_pool.pod_subnet.key)].id
     vnet_subnet_id = can(var.settings.default_node_pool.vnet_subnet_id) || can(var.settings.default_node_pool.subnet.resource_id) ? try(var.settings.default_node_pool.vnet_subnet_id, var.settings.default_node_pool.subnet.resource_id) : var.vnets[try(var.settings.lz_key, var.client_config.landingzone_key)][var.settings.vnet_key].subnets[try(var.settings.default_node_pool.subnet_key, var.settings.default_node_pool.subnet.key)].id
@@ -198,12 +197,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   #     }
 
   api_server_authorized_ip_ranges = try(var.settings.api_server_authorized_ip_ranges, null)
-
-  disk_encryption_set_id = try(coalesce(
-    try(var.settings.disk_encryption_set_id, ""),
-    try(var.settings.disk_encryption_set.id, "")
-  ), null)
-
+  disk_encryption_set_id          = can(var.settings.disk_encryption_set_id) || can(var.settings.disk_encryption_set.id) == false ? try(var.settings.disk_encryption_set_id, null) : var.settings.disk_encryption_set.id
 
   dynamic "auto_scaler_profile" {
     for_each = try(var.settings.auto_scaler_profile[*], {})
@@ -230,11 +224,20 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   dynamic "identity" {
-    for_each = try(var.settings.identity, null) == null ? [] : [1]
+    for_each = can(var.settings.identity) && can(var.settings.identity.identity_ids) == false ? [1] : []
 
     content {
-      type                      = var.settings.identity.type
-      user_assigned_identity_id = lower(var.settings.identity.type) == "userassigned" ? can(var.settings.identity.user_assigned_identity_id) ? var.settings.identity.user_assigned_identity_id : var.managed_identities[try(var.settings.identity.lz_key, var.client_config.landingzone_key)][var.settings.identity.managed_identity_key].id : null
+      type         = var.settings.identity.type
+      identity_ids = lower(var.settings.identity.type) == "userassigned" ? can(var.settings.identity.user_assigned_identity_id) ? [var.settings.identity.user_assigned_identity_id] : [var.managed_identities[try(var.settings.identity.lz_key, var.client_config.landingzone_key)][var.settings.identity.managed_identity_key].id] : null
+    }
+  }
+
+  dynamic "identity" {
+    for_each = can(var.settings.identity.identity_ids) ? [1] : []
+
+    content {
+      type         = var.settings.identity.type
+      identity_ids = var.settings.identity.identity_ids
     }
   }
 
@@ -296,14 +299,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
       outbound_type      = try(network_profile.value.outbound_type, null)
       pod_cidr           = try(network_profile.value.pod_cidr, null)
       service_cidr       = try(network_profile.value.service_cidr, null)
-      load_balancer_sku  = try(network_profile.value.load_balancer_sku, null)
+      load_balancer_sku  = try(lower(network_profile.value.load_balancer_sku), null)
 
       dynamic "load_balancer_profile" {
         for_each = try(network_profile.value.load_balancer_profile[*], {})
         content {
+          idle_timeout_in_minutes   = try(load_balancer_profile.value.idle_timeout_in_minutes, null)
           managed_outbound_ip_count = try(load_balancer_profile.value.managed_outbound_ip_count, null)
-          outbound_ip_prefix_ids    = try(load_balancer_profile.value.outbound_ip_prefix_ids, null)
           outbound_ip_address_ids   = try(load_balancer_profile.value.outbound_ip_address_ids, null)
+          outbound_ip_prefix_ids    = try(load_balancer_profile.value.outbound_ip_prefix_ids, null)
+          outbound_ports_allocated  = try(load_balancer_profile.value.outbound_ports_allocated, null)
         }
       }
     }
@@ -379,7 +384,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "nodepools" {
   name                   = each.value.name
   kubernetes_cluster_id  = azurerm_kubernetes_cluster.aks.id
   vm_size                = each.value.vm_size
-  availability_zones     = try(each.value.availability_zones, null)
+  zones                  = can(each.value.availability_zones) || can(each.value.zones) == false ? try(each.value.availability_zones, null) : each.value.zones
   enable_auto_scaling    = try(each.value.enable_auto_scaling, false)
   enable_host_encryption = try(each.value.enable_host_encryption, false)
   enable_node_public_ip  = try(each.value.enable_node_public_ip, false)
