@@ -11,7 +11,7 @@ resource "azurerm_mssql_server" "mssql" {
   tags                          = local.tags
 
   dynamic "azuread_administrator" {
-    for_each = can(var.settings.azuread_administrator) ? [var.settings.azuread_administrator] : []
+    for_each = try(var.settings.azuread_administrator, {}) == {} ? [] : [1]
 
     content {
       azuread_authentication_only = try(var.settings.azuread_administrator.azuread_authentication_only, false)
