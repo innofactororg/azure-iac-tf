@@ -99,6 +99,7 @@
     "databricks/100-standard-databricks-no-vnet",
     "databricks/101-standard-databricks-vnet",
     "databricks/102-premium-aml",
+    "databricks/102-premium-databricks-vnet-private-endpoint",
     "datalake/101-datalake-storage",
     "digital_twins/100-basic",
     "digital_twins/101-adt-servicebus",
