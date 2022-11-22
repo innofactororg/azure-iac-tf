@@ -28,6 +28,10 @@ module "example" {
   var_folder_path                       = var.var_folder_path
   tags                                  = local.tags
 
+  aadb2c = {
+    aadb2c_directory = var.aadb2c_directory
+  }
+
   azuread = {
     azuread_api_permissions             = var.azuread_api_permissions
     azuread_applications                = var.azuread_applications
@@ -171,6 +175,8 @@ module "example" {
     eventgrid_topic              = var.eventgrid_topic
     eventgrid_event_subscription = var.eventgrid_event_subscription
     eventgrid_domain_topic       = var.eventgrid_domain_topic
+    web_pubsubs                  = var.web_pubsubs
+    web_pubsub_hubs              = var.web_pubsub_hubs
   }
   networking = {
     application_gateway_applications                        = var.application_gateway_applications

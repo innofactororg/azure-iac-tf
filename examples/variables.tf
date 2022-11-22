@@ -1017,3 +1017,12 @@ variable "static_sites" {
 variable "aro_clusters" {
   default = {}
 }
+variable "web_pubsubs" {
+  default = {}
+}
+variable "web_pubsub_hubs" {
+  default = {}
+}
+variable "aadb2c_directory" {
+  default = {}
+}
