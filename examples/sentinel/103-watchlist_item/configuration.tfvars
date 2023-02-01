@@ -9,7 +9,7 @@ global_settings = {
 
 resource_groups = {
   rg1 = {
-    name = "sentinal"
+    name = "sentinal-rocks"
   }
 }
 

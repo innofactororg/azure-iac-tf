@@ -196,6 +196,18 @@ variable "compute" {
   default = {
     virtual_machines = {}
   }
+  # type = object ({
+  #   virtual_machines = map(any)
+  #   wvd_host_pools = object ({
+  #     friendly_name        = string
+  #     description          = string
+  #     validate_environment = bool
+  #     type                 = string
+  #     preferred_app_group_type = string
+  #     maximum_sessions_allowed = number
+  #     load_balancer_type       = string
+  #   })
+  # })
 }
 
 variable "webapp" {

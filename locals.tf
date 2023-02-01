@@ -79,6 +79,7 @@ locals {
     batch_jobs                          = try(var.compute.batch_jobs, {})
     batch_pools                         = try(var.compute.batch_pools, {})
     container_groups                    = try(var.compute.container_groups, {})
+    container_apps                      = try(var.compute.container_apps, {})
     dedicated_hosts                     = try(var.compute.dedicated_hosts, {})
     dedicated_host_groups               = try(var.compute.dedicated_host_groups, {})
     machine_learning_compute_instance   = try(var.compute.machine_learning_compute_instance, {})
