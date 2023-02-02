@@ -9,6 +9,7 @@ variable "display_name" {
 }
 variable "severity" {
   default = null
+  description = "values: High, Medium, Low, Informational"
 }
 variable "query" {
   default = null
