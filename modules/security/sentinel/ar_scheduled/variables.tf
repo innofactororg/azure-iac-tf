@@ -46,3 +46,8 @@ variable "trigger_threshold" {
 variable "settings" {
   default = null
 }
+
+variable "definition_file" {
+  default = null
+  description = "YAML File from which to load the definition, based on the schema defined in the Sentinel API and published "
+}
