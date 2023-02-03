@@ -87,15 +87,15 @@ module "sentinel_ar_scheduled" {
   # }
 
 
-  name                       = try(each.value.name, yamldecode(file("${path.root}/${each.value.definition_file}"))["id"])
-  display_name = try(each.value.display_name, yamldecode(file("${path.root}/${each.value.definition_file}"))["name"],each.value.name)
+  name                       = try(each.value.name, yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["id"])
+  display_name = try(each.value.display_name, yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["name"],each.value.name)
   settings                   = each.value
   log_analytics_workspace_id = can(each.value.diagnostic_log_analytics_workspace) || can(each.value.log_analytics_workspace.id) ? try(local.combined_diagnostics.log_analytics[each.value.diagnostic_log_analytics_workspace.key].id, each.value.log_analytics_workspace.id) : local.combined_objects_log_analytics[try(each.value.log_analytics_workspace.lz_key, local.client_config.landingzone_key)][each.value.log_analytics_workspace.key].id
-  severity = try(each.value.severity, try(yamldecode(file("${path.root}/${each.value.definition_file}"))["severity"], null ), "Informational")
-  query                      = try(each.value.query, yamldecode(file("${path.root}/${each.value.definition_file}"))["query"])
+  severity = try(each.value.severity, try(yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["severity"], null ), "Informational")
+  query                      = try(each.value.query, yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["query"])
   alert_rule_template_guid   = try(each.value.alert_rule_template_guid, null)
-  description                = try(each.value.description, yamldecode(file("${path.root}/${each.value.definition_file}"))["description"], null)
-  enabled                    = try(each.value.enabled, yamldecode(file("${path.root}/${each.value.definition_file}"))["enabled"], true)
+  description                = try(each.value.description, yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["description"], null)
+  enabled                    = try(each.value.enabled, yamldecode(file("${basename(path.cwd)}/${each.value.definition_file}"))["enabled"], true)
   query_frequency            = try(each.value.query_frequency, "PT5H")
   query_period               = try(each.value.query_period, "PT5H")
   suppression_duration       = try(each.value.suppression_duration, "PT5H")
