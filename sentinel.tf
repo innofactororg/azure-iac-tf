@@ -87,7 +87,7 @@ module "sentinel_ar_scheduled" {
   # }
 
 
-  name                       = try(each.value.name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["id"])
+  name                       = try(each.value.name, yamldecode(file(join(abspath("${path.cwd}/.."),"/${each.value.definition_file}")))["id"])
   display_name = try(each.value.display_name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name)
   settings                   = each.value
   log_analytics_workspace_id = can(each.value.diagnostic_log_analytics_workspace) || can(each.value.log_analytics_workspace.id) ? try(local.combined_diagnostics.log_analytics[each.value.diagnostic_log_analytics_workspace.key].id, each.value.log_analytics_workspace.id) : local.combined_objects_log_analytics[try(each.value.log_analytics_workspace.lz_key, local.client_config.landingzone_key)][each.value.log_analytics_workspace.key].id
