@@ -13,10 +13,10 @@ resource "azurecaf_name" "virtualhub_fw" {
 
 
 # Part of migration from 2.99.0 to 3.7.0
-moved {
-  from = azurerm_template_deployment.arm_template_vhub_firewall
-  to   = azurerm_resource_group_template_deployment.arm_template_vhub_firewall
-}
+# moved {
+#   from = azurerm_template_deployment.arm_template_vhub_firewall
+#   to   = azurerm_resource_group_template_deployment.arm_template_vhub_firewall
+# }
 
 # As per https://docs.microsoft.com/en-us/azure/templates/microsoft.network/2019-09-01/azurefirewalls
 resource "azurerm_resource_group_template_deployment" "arm_template_vhub_firewall" {
