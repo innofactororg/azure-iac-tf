@@ -1,6 +1,6 @@
 resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
   name                       = var.name
-  log_analytics_workspace_id = var.log_analytics_workspace_id
+  log_analytics_workspace_id = lower(var.log_analytics_workspace_id)
   display_name               = var.display_name
   severity                   = var.severity
   query                      = var.query
