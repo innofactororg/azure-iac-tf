@@ -56,7 +56,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
     for_each = var.entity_mappings == null ? [] : var.entity_mappings
     content {
       entity_type = entity_mapping.value.entityType
-      field _mapping {
+      field_mapping {
         identifier = entity_mapping.value.fieldMappings[0].identifier
         column_name = entity_mapping.value.fieldMappings[0].columnName
       }
