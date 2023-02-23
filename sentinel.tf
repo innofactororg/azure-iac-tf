@@ -104,7 +104,7 @@ module "sentinel_ar_scheduled" {
   trigger_operator           = try(each.value.trigger_operator, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerOperator"], null)
   trigger_threshold          = try(each.value.trigger_threshold, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerThreshold"], null)
   display_name_format        = try(each.value.display_name_format, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["alertDetailsOverride"].alertDisplayNameFormat,null)
-  entity_type                = try(each.value.tactics, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"], null)
+  entity_type                = try(each.value.tactics, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"].entityType, null)
   identifier                 = try(each.value.tactics, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"].fieldMappings[0].identifier, null)
   column_name                = try(each.value.tactics, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"].fieldMappings[0].columnName, null)
 }
