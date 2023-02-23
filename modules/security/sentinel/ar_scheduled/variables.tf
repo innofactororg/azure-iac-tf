@@ -52,3 +52,11 @@ variable "definition_file" {
   default = null
   description = "YAML File from which to load the definition, based on the schema defined in the Sentinel API and published "
 }
+
+variable "display_name_format" {
+  default = null
+}
+
+variable "entity_mappings" {
+  default = null
+}

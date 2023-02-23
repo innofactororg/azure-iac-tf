@@ -44,4 +44,23 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
       }
     }
   }
+
+  alert_details_override {
+    display_name_format = var.display_name_format
+    description_format = null
+    tactics_column_name = null
+    severity_column_name = null
+  }
+
+  dynamic "entity_mapping" {
+    for_each = var.entity_mappings == null ? [] : var.entity_mappings
+    content {
+      entity_type = entity_mapping.value.entityType
+      field_mapping {
+        identifier = entity_mapping.value.fieldMappings[0].identifier
+        column_name = entity_mapping.value.fieldMappings[0].columnName
+      }
+    }
+  }
+
 }
