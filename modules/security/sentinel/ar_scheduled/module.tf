@@ -53,12 +53,12 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
   }
 
   dynamic "entity_mapping" {
-    for_each = lookup(var.settings, "entityType", {}) != {} ? [1] : []
+    for_each = lookup(var.entity_type, "entityType", {}) != {} ? [1] : []
     content {
-      entity_type = var.entity_type
+      entity_type = lookup(var.entity_type.entity_mapping, "entityType", null)
       field_mapping {
-        identifier  = var.identifier
-        column_name = var.column_name
+        identifier  = lookup(var.identifier.entity_mapping, "identifier", null)
+        column_name = lookup(var.column_name.entity_mapping, "columnName", null)
       }
     }
   }
