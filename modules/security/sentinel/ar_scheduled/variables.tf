@@ -56,3 +56,15 @@ variable "definition_file" {
 variable "display_name_format" {
   default = null
 }
+
+variable "entity_type" {
+  default = null
+}
+
+variable "identifier" {
+  default = null
+}
+
+variable "column_name" {
+  default = null
+}

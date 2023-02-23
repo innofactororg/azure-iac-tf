@@ -51,4 +51,15 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
     tactics_column_name = null
     severity_column_name = null
   }
+
+  dynamic "entity_mapping" {
+    for_each = lookup(var.entity_type, "entity_mapping", {}) != {} ? [1] : []
+    content {
+      entity_type = var.entity_type
+      field_mapping {
+        identifier  = var.identifier
+        column_name = var.column_name
+      }
+    }
+  }
 }
