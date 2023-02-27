@@ -21,22 +21,31 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   }
 
   dynamic "action_playbook" {
-    for_each = try(var.settings.action_playbook, {})
+    for_each = var.action_order == null ? [] : var.action_order
 
     content {
-      logic_app_id = try(var.combined_objects_logic_app_workflow[try(action_playbook.value.lz_key, var.client_config.landingzone_key)][action_playbook.value.logic_app_key].id, null)
-      order        = try(action_playbook.value.order, null)
-      tenant_id    = try(action_playbook.value.tenant_id, null)
+      order        = try(action_playbook.value.action_order, null)
+      
+        actionConfiguration {
+            logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
+            tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
+        }
+
     }
   }
 
   dynamic "condition" {
-    for_each = try(var.settings.condition, {})
+    for_each = var.condition_type == null ? [] : var.condition_type
 
     content {
-      operator = try(condition.value.operator, null)
-      property = try(condition.value.property, null)
-      values   = try(condition.value.values, null)
+
+      conditionType = try(action_playbook.value.condition_type, null)
+
+      conditionProperties {
+          operator = try(condition.value.conditionProperties[0].operator, null)
+          property = try(condition.value.conditionProperties[0].propertyName, null)
+          values   = try(condition.value.conditionProperties[0].propertyValues, null)
+          }
     }
   }
 }
