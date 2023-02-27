@@ -21,7 +21,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   }
 
   dynamic "action_playbook" {
-  for_each = [for action in var.settings.action_playbook : {
+  for_each = [for action in var.action_order : {
     order             = action.action_order
     action_type       = action.actionType
     logic_app_resource_id = action.actionConfiguration.logicAppResourceId
@@ -33,14 +33,14 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
 
     actionConfiguration = {
-      logic_app_id = action_playbook.value.logic_app_resource_id
+      logic_app_id  = action_playbook.value.logic_app_resource_id
       tenant_id         = action_playbook.value.tenant_id
     }
   }
   }
   
   dynamic "condition" {
-  for_each = [for condition in var.settings.condition : {
+  for_each = [for condition in var.condition_type : {
     type        = condition.condition_type
     property    = condition.conditionProperties.propertyName
     operator    = condition.conditionProperties.operator
