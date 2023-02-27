@@ -2,15 +2,17 @@ module "sentinel_automation_rules" {
   source   = "./modules/security/sentinel/automation_rule"
   for_each = try(local.security.sentinel_automation_rules, {})
 
-  name                                = each.value.name
-  display_name                        = each.value.display_name
+  name                                = try(each.value.name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["id"], yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name )
+  display_name                        = try(each.value.display_name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["displayName"])
   settings                            = each.value
   log_analytics_workspace_id          = can(each.value.diagnostic_log_analytics_workspace) || can(each.value.log_analytics_workspace.id) ? try(local.combined_diagnostics.log_analytics[each.value.diagnostic_log_analytics_workspace.key].id, each.value.log_analytics_workspace.id) : local.combined_objects_log_analytics[try(each.value.log_analytics_workspace.lz_key, local.client_config.landingzone_key)][each.value.log_analytics_workspace.key].id
-  order                               = each.value.order
-  enabled                             = try(each.value.enabled, true)
-  expiration                          = try(each.value.expiration, null)
+  order                               = try(each.value.order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["order"])
+  enabled                             = try(each.value.enabled, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].isEnabled, true)
+  expiration                          = try(each.value.expiration, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].expiration, null)
   combined_objects_logic_app_workflow = local.combined_objects_logic_app_workflow
   client_config                       = local.client_config
+  action_order                        = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"], null)
+  condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["conditions"], null)
 }
 
 module "sentinel_watchlists" {
