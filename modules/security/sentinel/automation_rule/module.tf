@@ -81,11 +81,11 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
       # conditionType = try(action_playbook.value.condition_type, null)
 
-      conditionProperties {
+      # conditionProperties {
           operator = try(condition.value.conditionProperties[0].operator, null)
           property = try(condition.value.conditionProperties[0].propertyName, null)
           values   = try(condition.value.conditionProperties[0].propertyValues, null)
-          }
+          # }
     }
   }
 }
