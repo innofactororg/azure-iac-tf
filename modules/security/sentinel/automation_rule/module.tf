@@ -66,10 +66,10 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
     content {
       order        = try(action_playbook.value.action_order, null)
       
-        actionConfiguration {
+        # actionConfiguration {
             logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
             tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
-        }
+        # }
 
     }
   }
