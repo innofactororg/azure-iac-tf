@@ -79,7 +79,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
     content {
 
-      conditionType = try(action_playbook.value.condition_type, null)
+      # conditionType = try(action_playbook.value.condition_type, null)
 
       conditionProperties {
           operator = try(condition.value.conditionProperties[0].operator, null)
