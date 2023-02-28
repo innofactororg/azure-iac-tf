@@ -6,7 +6,7 @@ resource "azurerm_virtual_machine_extension" "session_host_dscextension" {
   type                       = "DSC"
   type_handler_version       = "2.73"
   auto_upgrade_minor_version = true
-      # "modulesURL" : format("%s/DSC/Configuration.zip", var.extension.base_url),
+
   settings = jsonencode(
     {
       "modulesURL" : "${var.extension.base_url}",
