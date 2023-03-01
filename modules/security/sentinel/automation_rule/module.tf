@@ -10,8 +10,8 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
     for_each = try(var.settings.action_incident, {})
 
     content {
-      order                  = try(action_incident.value.order, null)
-      status                 = try(action_incident.value.status, null)
+      order                  = try(action_incident.value.order, 1)
+      status                 = try(action_incident.value.status, "New")
       classification         = try(action_incident.value.classification, null)
       classification_comment = try(action_incident.value.classification_comment, null)
       labels                 = try(action_incident.value.labels, null)
