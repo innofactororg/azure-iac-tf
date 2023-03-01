@@ -12,7 +12,7 @@ module "sentinel_automation_rules" {
   combined_objects_logic_app_workflow = local.combined_objects_logic_app_workflow
   client_config                       = local.client_config
   action_order                        = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"], null)
-  condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"]["conditions"], null)
+  condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].conditions, null)
 }
 
 module "sentinel_watchlists" {
