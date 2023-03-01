@@ -32,10 +32,10 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
     order = action_playbook.value.order
 
 
-    actionConfiguration = {
+    # actionConfiguration = {
       logic_app_id  = action_playbook.value.logic_app_resource_id
       tenant_id         = action_playbook.value.tenant_id
-    }
+    # }
   }
   }
   
@@ -50,11 +50,11 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   content {
     type = condition.value.type
 
-    conditionProperties = {
+    # conditionProperties = {
       property = condition.value.property
       operator = condition.value.operator
       values   = condition.value.values
-    }
+    # }
   }
   }
 
