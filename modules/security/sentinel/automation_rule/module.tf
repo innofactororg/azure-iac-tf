@@ -48,7 +48,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   }]
 
   content {
-    type = condition.value.type
+    # type = condition.value.type
 
     # conditionProperties = {
       property = condition.value.property
