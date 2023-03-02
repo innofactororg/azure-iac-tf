@@ -25,3 +25,11 @@ variable "combined_objects_logic_app_workflow" {
 variable "client_config" {
   default = null
 }
+variable "action_order" {
+  default = null
+}
+variable "condition_type" {
+  default = null
+}
+
+

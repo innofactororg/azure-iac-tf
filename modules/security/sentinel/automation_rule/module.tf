@@ -10,8 +10,8 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
     for_each = try(var.settings.action_incident, {})
 
     content {
-      order                  = try(action_incident.value.order, null)
-      status                 = try(action_incident.value.status, null)
+      order                  = try(action_incident.value.order, 1)
+      status                 = try(action_incident.value.status, "New")
       classification         = try(action_incident.value.classification, null)
       classification_comment = try(action_incident.value.classification_comment, null)
       labels                 = try(action_incident.value.labels, null)
@@ -20,23 +20,71 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
     }
   }
 
+  # dynamic "action_playbook" {
+  # for_each = [for action in var.action_order : {
+  #   order             = action.action_order
+  #   action_type       = action.actionType
+  #   logic_app_resource_id = action.actionConfiguration.logicAppResourceId
+  #   tenant_id         = action.actionConfiguration.tenantId
+  # }]
+
+  # content {
+  #   order = action_playbook.value.order
+
+
+  #   # actionConfiguration = {
+  #     logic_app_id  = action_playbook.value.logic_app_resource_id
+  #     tenant_id         = action_playbook.value.tenant_id
+  #   # }
+  # }
+  # }
+  
+  # dynamic "condition" {
+  # for_each = [for condition in var.condition_type : {
+  #   type        = condition.condition_type
+  #   property    = condition.conditionProperties.propertyName
+  #   operator    = condition.conditionProperties.operator
+  #   values      = condition.conditionProperties.propertyValues
+  # }]
+
+  # content {
+  #   # type = condition.value.type
+
+  #   # conditionProperties = {
+  #     property = condition.value.property
+  #     operator = condition.value.operator
+  #     values   = condition.value.values
+  #   # }
+  # }
+  # }
+
   dynamic "action_playbook" {
-    for_each = try(var.settings.action_playbook, {})
+    for_each = var.action_order == null ? [] : var.action_order
 
     content {
-      logic_app_id = try(var.combined_objects_logic_app_workflow[try(action_playbook.value.lz_key, var.client_config.landingzone_key)][action_playbook.value.logic_app_key].id, null)
       order        = try(action_playbook.value.order, null)
-      tenant_id    = try(action_playbook.value.tenant_id, null)
+      
+        # actionConfiguration {
+            logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
+            tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
+        # }
+
     }
   }
 
   dynamic "condition" {
-    for_each = try(var.settings.condition, {})
+    for_each = var.condition_type == null ? [] : var.condition_type
 
     content {
-      operator = try(condition.value.operator, null)
-      property = try(condition.value.property, null)
-      values   = try(condition.value.values, null)
+
+      # conditionType = try(action_playbook.value.condition_type, null)
+
+      # conditionProperties {
+          operator = try(condition.value.conditionProperties.operator, null)
+          property = try(condition.value.conditionProperties.propertyName, null)
+          values   = try(condition.value.conditionProperties.propertyValues, null)
+          # }
     }
   }
+
 }
