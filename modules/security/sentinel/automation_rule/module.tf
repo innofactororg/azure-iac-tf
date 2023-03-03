@@ -60,7 +60,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   # }
 
   dynamic "action_playbook" {
-    for_each = var.action_type == "ModifyProperties" ? [] : var.action_type
+    for_each = var.action_type == "ModifyProperties" ? [] : var.action_order
 
     content {
       order        = try(action_playbook.value.order, null)
