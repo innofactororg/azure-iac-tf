@@ -7,7 +7,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   expiration                 = var.expiration
 
   dynamic "action_incident" {
-    for_each = var.action_type == "RunPlaybook" ? [] : var.action_order
+    for_each = var.action_type == "RunPlaybook" ? [] : var.action_type
 
     content {
       order                  = try(action_incident.value.order, null)
@@ -59,7 +59,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   # }
 
   dynamic "action_playbook" {
-    for_each = var.action_type == "ModifyProperties" ? [] : var.action_order
+    for_each = var.action_type == "ModifyProperties" ? [] : var.action_type
 
     content {
       order        = try(action_playbook.value.order, null)
