@@ -47,6 +47,9 @@ variable "trigger_threshold" {
 variable "settings" {
   default = null
 }
+variable "action_type" {
+  default = null
+}
 
 variable "definition_file" {
   default = null
