@@ -31,5 +31,8 @@ variable "action_order" {
 variable "condition_type" {
   default = null
 }
+variable "action_type" {
+  default = null
+}
 
 
