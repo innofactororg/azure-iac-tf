@@ -7,16 +7,16 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   expiration                 = var.expiration
 
   dynamic "action_incident" {
-    for_each = try(var.settings.action_incident, {})
+    for_each = var.action_type == "RunPlaybook" ? [] : var.action_order
 
     content {
-      order                  = try(action_incident.value.order, 1)
-      status                 = try(action_incident.value.status, "New")
-      classification         = try(action_incident.value.classification, null)
-      classification_comment = try(action_incident.value.classification_comment, null)
-      labels                 = try(action_incident.value.labels, null)
-      owner_id               = try(action_incident.value.owner_id, null)
-      severity               = try(action_incident.value.severity, null)
+      order                  = try(action_incident.value.order, null)
+      status                 = try(action_incident.value.actionConfiguration.status, null)
+      classification         = try(action_incident.value.actionConfiguration.classification, null)
+      classification_comment = try(action_incident.value.actionConfiguration.classificationComment, null)
+      labels                 = try(action_incident.value.actionConfiguration.labels, null)
+      owner_id               = try(action_incident.value.actionConfiguration.owner, null)
+      severity               = try(action_incident.value.actionConfiguration.severity, null)
     }
   }
 
@@ -59,7 +59,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   # }
 
   dynamic "action_playbook" {
-    for_each = var.action_order == null ? [] : var.action_order
+    for_each = var.action_type == "ModifyProperties" ? [] : var.action_order
 
     content {
       order        = try(action_playbook.value.order, null)
