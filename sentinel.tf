@@ -11,10 +11,9 @@ module "sentinel_automation_rules" {
   expiration                          = try(each.value.expiration, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].expiration, null)
   combined_objects_logic_app_workflow = local.combined_objects_logic_app_workflow
   client_config                       = local.client_config
-  action_order                        = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"], null)
+  modify_properties                    = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["modifyProperties"], null)
+  run_playbook                    = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["runPlaybook"], null)
   condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].conditions, null)
-  action_type                         = try(each.value.action_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"][0].actionType, null)
-
 }
 
 module "sentinel_watchlists" {
@@ -78,18 +77,6 @@ module "sentinel_ar_ms_security_incidents" {
 module "sentinel_ar_scheduled" {
   source   = "./modules/security/sentinel/ar_scheduled"
   for_each = try(local.security.sentinel_ar_scheduled, {})
-
-  # definition_yaml            = try(yamldecode(file(each.value.definition_file)), null)
-  # raw_settings = yamldecode(file("${path.module}/../settings.yml"))
-  # locals {
-  #   raw_settings = yamldecode(file("${path.cwd}/${each.value.definition_file}"))
-  #   settings = {
-  #     variables = tomap({
-  #       for v in local.raw_settings.variables : v.name => v.value
-  #     })
-  #   }
-  # }
-
 
   name                       = try(each.value.name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["id"], yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name )
   display_name = try(each.value.display_name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name)

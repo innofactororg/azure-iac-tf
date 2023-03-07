@@ -31,8 +31,13 @@ variable "action_order" {
 variable "condition_type" {
   default = null
 }
-variable "action_type" {
+variable "modify_properties" {
   default = null
 }
+
+variable "run_playbook" {
+  default = null
+}
+
 
 
