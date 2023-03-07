@@ -22,7 +22,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   }
 
   dynamic "action_playbook" {
-    for_each = var.action_order.actionType == "ModifyProperties" ? [] : var.action_order
+    for_each = action_playbook.value.actionType == "ModifyProperties" ? [] : var.action_order
     # for_each = lookup(var.settings.action_playbook, "ModifyProperties", {}) != {} ? [1] : [] 
 
     content {
