@@ -7,47 +7,35 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   expiration                 = var.expiration
 
   dynamic "action_incident" {
-
-    for_each = var.action_type == "RunPlaybook" ? [] : var.action_order
-    # for_each = lookup(var.settings.action_incident, "RunPlaybook", {}) != {} ? [1] : [] 
-    # for_each = [for a in var.action_order : a.actionType == "ModifyProperties" ? a : null]
-    
+    for_each = var.modify_properties== null ? [] : var.modify_properties
     content {
       order                  = try(action_incident.value.order, 1)
-      status                 = try(action_incident.value.actionConfiguration.status, "New")
-      classification         = try(action_incident.value.actionConfiguration.classification, null)
-      classification_comment = try(action_incident.value.actionConfiguration.classificationComment, null)
-      # labels                 = try(action_incident.value.actionConfiguration.labels, null)
-      owner_id               = try(action_incident.value.actionConfiguration.owner, null)
-      severity               = try(action_incident.value.actionConfiguration.severity, null)
+      status                 = try(action_incident.value.action_incident.status, "New")
+      classification         = try(action_incident.value.classification, null)
+      classification_comment = try(action_incident.value.classificationComment, null)
+      labels                 = try(action_incident.value.labels, null)
+      owner_id               = try(action_incident.value.owner, null)
+      severity               = try(action_incident.value.severity, null)
     }
   }
 
   dynamic "action_playbook" {
-    for_each = var.action_type == "ModifyProperties" ? [] : var.action_order
-    # for_each = lookup(var.settings.action_playbook, "ModifyProperties", {}) != {} ? [1] : [] 
-    # for_each = [for a in var.action_order : a.actionType == "RunPlaybook" ? a : null]
-    
+    for_each = var.run_playbook == null ? [] : var.run_playbook
     content {
-      order        = try(action_playbook.value.order, null)
-      logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
-      tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
+      logic_app_id   = action_playbook.value.logicAppResourceId
+      order  = action_playbook.value.order
+      tenant_id = action_playbook.value.tenantId
     }
   }
 
   dynamic "condition" {
     for_each = var.condition_type == null ? [] : var.condition_type
-
     content {
-
-      # conditionType = try(action_playbook.value.condition_type, null)
-
-      # conditionProperties {
-          operator = try(condition.value.conditionProperties.operator, null)
-          property = try(condition.value.conditionProperties.propertyName, null)
-          values   = try(condition.value.conditionProperties.propertyValues, null)
-          # }
+      operator = try(condition.value.conditionProperties.operator, null)
+      property = try(condition.value.conditionProperties.propertyName, null)
+      values   = try(condition.value.conditionProperties.propertyValues, null)
     }
   }
+  
 
 }
