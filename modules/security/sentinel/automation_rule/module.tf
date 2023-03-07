@@ -8,7 +8,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
   dynamic "action_incident" {
     # for_each = var.action_type == "RunPlaybook" ? [] : var.action_type
-    for_each = lookup(var.settings, "RunPlaybook", {}) != {} ? [1] : [] 
+    for_each = lookup(var.settings.action_incident, "RunPlaybook", {}) != {} ? [1] : [] 
 
     content {
       order                  = try(action_incident.value.order, 1)
@@ -23,7 +23,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
   dynamic "action_playbook" {
     # for_each = var.action_type == "ModifyProperties" ? [] : var.action_type
-    for_each = lookup(var.settings, "ModifyProperties", {}) != {} ? [1] : [] 
+    for_each = lookup(var.settings.action_playbook, "ModifyProperties", {}) != {} ? [1] : [] 
 
     content {
       order        = try(action_playbook.value.order, null)
