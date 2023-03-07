@@ -8,7 +8,6 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
 
   dynamic "action_incident" {
 
-    for_each = var.action_order
     for_each = var.action_type == "RunPlaybook" ? [] : var.action_type
     # for_each = lookup(var.settings.action_incident, "RunPlaybook", {}) != {} ? [1] : [] 
     # for_each = [for a in var.action_order : a.actionType == "ModifyProperties" ? a : null]
