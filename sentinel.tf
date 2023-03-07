@@ -14,7 +14,7 @@ module "sentinel_automation_rules" {
   modify_properties                    = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["modifyProperties"], null)
   run_playbook                    = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["runPlaybook"], null)
   condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].conditions, null)
-  # action_type                         = try(each.value.action_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"][0].actionType, null)
+  action_type                         = try(each.value.action_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"][0].actionType, null)
 
 }
 
