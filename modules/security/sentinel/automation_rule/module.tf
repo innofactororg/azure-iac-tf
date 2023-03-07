@@ -7,9 +7,9 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   expiration                 = var.expiration
 
   dynamic "action_incident" {
-    # for_each = var.action_type == "RunPlaybook" ? [] : var.action_order
+    for_each = var.action_type == "RunPlaybook" ? [] : var.action_order
     # for_each = lookup(var.settings.action_incident, "RunPlaybook", {}) != {} ? [1] : [] 
-    for_each = [for a in var.action_order : a.actionType == "ModifyProperties" ? a : null]
+    # for_each = [for a in var.action_order : a.actionType == "ModifyProperties" ? a : null]
     
     content {
       order                  = try(action_incident.value.order, 1)
@@ -23,17 +23,14 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   }
 
   dynamic "action_playbook" {
-    # for_each = var.action_order == "ModifyProperties" ? [] : var.action_order
+    for_each = var.action_type == "ModifyProperties" ? [] : var.action_order
     # for_each = lookup(var.settings.action_playbook, "ModifyProperties", {}) != {} ? [1] : [] 
-    for_each = [for a in var.action_order : a.actionType == "RunPlaybook" ? a : null]
+    # for_each = [for a in var.action_order : a.actionType == "RunPlaybook" ? a : null]
     
     content {
       order        = try(action_playbook.value.order, null)
-      # actionConfiguration {
-            logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
-            tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
-        # }
-
+      logic_app_id = try(action_playbook.value.actionConfiguration.logicAppResourceId, null)
+      tenant_id    = try(action_playbook.value.actionConfiguration.tenantId, null)
     }
   }
 
