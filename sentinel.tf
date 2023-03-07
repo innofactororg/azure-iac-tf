@@ -13,7 +13,7 @@ module "sentinel_automation_rules" {
   client_config                       = local.client_config
   action_order                        = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"], null)
   condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].conditions, null)
-  # action_type                         = try(each.value.action_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"][0].actionType, null)
+  action_type                         = try(each.value.action_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"][0].actionType, null)
 
 }
 
