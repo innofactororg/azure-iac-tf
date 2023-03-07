@@ -1,65 +1,42 @@
 variable "name" {
   default = null
 }
-variable "log_analytics_workspace_id" {
-  default = null
-}
 variable "display_name" {
-  default = null
-}
-variable "severity" {
-  default = null
-  description = "values: High, Medium, Low, Informational"
-}
-variable "query" {
-  default = null
-}
-variable "alert_rule_template_guid" {
-  default = null
-}
-variable "description" {
-  default = null
-}
-variable "enabled" {
-  default = null
-}
-variable "query_frequency" {
-  default = null
-}
-variable "query_period" {
-  default = null
-}
-variable "suppression_duration" {
-  default = null
-}
-variable "suppression_enabled" {
-  default = null
-}
-variable "tactics" {
-  default = null
-}
-variable "trigger_operator" {
-  default = null
-}
-variable "trigger_threshold" {
   default = null
 }
 variable "settings" {
   default = null
 }
-variable "action_type" {
+variable "log_analytics_workspace_id" {
+  default = null
+}
+variable "order" {
+  default = null
+}
+variable "enabled" {
+  default = null
+}
+variable "expiration" {
+  default = null
+}
+variable "combined_objects_logic_app_workflow" {
+  default = null
+}
+variable "client_config" {
+  default = null
+}
+variable "action_order" {
+  default = null
+}
+variable "condition_type" {
+  default = null
+}
+variable "modify_properties" {
   default = null
 }
 
-variable "definition_file" {
-  default = null
-  description = "YAML File from which to load the definition, based on the schema defined in the Sentinel API and published "
-}
-
-variable "display_name_format" {
+variable "run_playbook" {
   default = null
 }
 
-variable "entity_mappings" {
-  default = null
-}
+
