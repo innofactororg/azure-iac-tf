@@ -16,7 +16,7 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
       status                 = try(action_incident.value.actionConfiguration.status, "New")
       classification         = try(action_incident.value.actionConfiguration.classification, null)
       classification_comment = try(action_incident.value.actionConfiguration.classificationComment, null)
-      labels                 = try(action_incident.value.actionConfiguration.labels, null)
+      # labels                 = try(action_incident.value.actionConfiguration.labels, null)
       owner_id               = try(action_incident.value.actionConfiguration.owner, null)
       severity               = try(action_incident.value.actionConfiguration.severity, null)
     }
