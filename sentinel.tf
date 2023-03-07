@@ -14,7 +14,7 @@ module "sentinel_automation_rules" {
   action_order                        = try(each.value.action_order, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"], null)
   condition_type                      = try(each.value.condition_type, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggeringLogic"].conditions, null)
   action_type                         = try(each.value.actionType, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["actions"].actionType[0], "RunPlaybook")
-
+  
 }
 
 module "sentinel_watchlists" {
