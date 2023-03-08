@@ -9,8 +9,8 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
   dynamic "action_incident" {
     for_each = var.modify_properties== null ? [] : var.modify_properties
     content {
-      order                  = try(action_incident.value.order, 1)
-      status                 = try(action_incident.value.action_incident.status, "New")
+      order                  = try(action_incident.value.order, null)
+      status                 = try(action_incident.value.action_incident.status, null)
       classification         = try(action_incident.value.classification, null)
       classification_comment = try(action_incident.value.classificationComment, null)
       labels                 = try(action_incident.value.labels, null)
