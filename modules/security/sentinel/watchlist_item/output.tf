@@ -1,3 +1,3 @@
 output "id" {
-  value = azurerm_sentinel_watchlist_item.watchlist_item.id
+  value = azurerm_sentinel_watchlist_item.watchlist_item.watchlist_id
 }
