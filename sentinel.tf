@@ -35,7 +35,7 @@ module "sentinel_watchlist_items" {
 
   name         = try(each.value.name, null)
   watchlist_id = local.combined_objects_sentinel_watchlists[try(each.value.sentinel_watchlist.lz_key, local.client_config.landingzone_key)][each.value.sentinel_watchlist.key].id
-  properties   = each.value.properties
+  properties   = try(each.value.properties,csvdecode(file("${path.cwd}/${each.value.definition_file}")), null)
 }
 
 module "sentinel_ar_fusions" {
