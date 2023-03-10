@@ -4,5 +4,5 @@ resource "azurerm_sentinel_watchlist_item" "watchlist_item" {
 
   name         = var.name
   watchlist_id = var.watchlist_id
-  properties   = var.csv_data[each.key]
+  properties   = var.properties[each.key]
 }
