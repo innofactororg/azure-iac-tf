@@ -43,8 +43,27 @@ locals {
       objectid = local.managed_identity
     }
   }
+
+  # test-scriptpath
+  scriptpath = try(var.extension.scriptpath, "")
+
   map_command = {
-    commandToExecute = try(var.extension.commandtoexecute, "")
+    # default
+    # commandToExecute = try(var.extension.commandtoexecute, "")
+
+    # test-scriptpath
+    commandToExecute = var.extension.scriptpath != "" ? "PowerShell -encodedCommand ${textencodebase64(file(var.extension.scriptpath), "UTF-16LE")}" : try(var.extension.commandtoexecute, "")
+
+    # test 2
+    # commandToExecute = coalesce(
+    #   try(var.extension.commandtoexecute, ""), try("PowerShell -encodedCommand ${textencodebase64(file(var.extension.scriptpath), "UTF-16LE")}", ""), ""
+    # )
+
+    # test 3
+    # commandToExecute = try(
+    #   coalesce(var.extension.commandtoexecute, "PowerShell -encodedCommand ${textencodebase64(file(var.extension.scriptpath), "UTF-16LE")}", ""), ""
+    # )
+
   }
 
   system_assigned_id = local.identity_type == "SystemAssigned" ? local.map_system_assigned : null
