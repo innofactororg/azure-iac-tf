@@ -49,10 +49,12 @@ locals {
 
   map_command = {
     # default
-    # commandToExecute = try(var.extension.commandtoexecute, "")
+    commandToExecute = try(var.extension.commandtoexecute, "")
 
     # test-scriptpath
-    commandToExecute = var.extension.scriptpath != "" ? "PowerShell -encodedCommand ${textencodebase64(file(var.extension.scriptpath), "UTF-16LE")}" : try(var.extension.commandtoexecute, "")
+    # commandToExecute = var.extension.scriptpath != "" ? "PowerShell -encodedCommand ${textencodebase64(file(var.extension.scriptpath), "UTF-16LE")}" : try(var.extension.commandtoexecute, "")
+    # commandToExecute = var.extension.commandtoexecute != "" ? "PowerShell -encodedCommand ${textencodebase64(file("${var.extension.commandtoexecute}"), "UTF-16LE")}" : ""
+
 
     # test 2
     # commandToExecute = coalesce(
