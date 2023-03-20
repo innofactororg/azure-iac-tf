@@ -41,7 +41,9 @@ module "vm_extension_diagnostics" {
 
 module "vm_extension_microsoft_azure_domainjoin" {
   source = "./modules/compute/virtual_machine_extensions"
-
+  depends_on = [
+    module.dynamic_keyvault_secrets
+  ]
   for_each = {
     for key, value in try(local.compute.virtual_machines, {}) : key => value
     if try(value.virtual_machine_extensions.microsoft_azure_domainjoin, null) != null
