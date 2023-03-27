@@ -18,7 +18,7 @@ resource "azurerm_virtual_machine_extension" "session_host_dscextension" {
           try(var.extension.host_pool_name, ""),
           try(var.wvd_host_pools[var.extension.host_pool.lz_key][var.extension.host_pool.host_pool_key].name, var.wvd_host_pools[var.client_config.landingzone_key][var.extension.host_pool.host_pool_key].name)
         ),
-        "aadJoin": true
+        # "aadJoin": true
       }
     }
   )
