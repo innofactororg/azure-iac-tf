@@ -326,21 +326,21 @@ keyvaults = {
 #   tde_primary = {
 #     sqlmi1 = {
 #       mssql_managed_instance_key = "sqlmi1"
-#       key_permissions            = ["get", "UnwrapKey", "WrapKey"]
+#       key_permissions            = ["get", "unwrapKey", "wrapKey"]
 #     }
 #     sqlmi2 = {
 #       mssql_managed_instance_secondary_key = "sqlmi2"
-#       key_permissions                      = ["get", "UnwrapKey", "WrapKey"]
+#       key_permissions                      = ["get", "unwrapKey", "wrapKey"]
 #     }
 #   }
 #   tde_secondary = {
 #     sqlmi1 = {
 #       mssql_managed_instance_key = "sqlmi1"
-#       key_permissions            = ["get", "UnwrapKey", "WrapKey"]
+#       key_permissions            = ["get", "unwrapKey", "wrapKey"]
 #     }
 #     sqlmi2 = {
 #       mssql_managed_instance_secondary_key = "sqlmi2"
-#       key_permissions                      = ["get", "UnwrapKey", "WrapKey"]
+#       key_permissions                      = ["get", "unwrapKey", "wrapKey"]
 #     }
 #   }
 # }
@@ -350,7 +350,7 @@ keyvaults = {
 #     keyvault_key = "tde_primary"
 #     name         = "TDE"
 #     key_type     = "RSA"
-#     key_opts     = ["Encrypt", "Decrypt", "Sign", "Verify", "WrapKey", "UnwrapKey"]
+#     key_opts     = ["encrypt", "decrypt", "sign", "verify", "wrapKey", "unwrapKey"]
 #     key_size     = 2048
 #   }
 # }
