@@ -43,9 +43,10 @@ module "networking" {
   settings                          = each.value
   tags                              = try(each.value.tags, null)
 
-  resource_group_name = local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].name
-  location            = lookup(each.value, "region", null) == null ? local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location : local.global_settings.regions[each.value.region]
-  base_tags           = try(local.global_settings.inherit_tags, false) ? try(local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags, {}) : {}
+  base_tags           = local.global_settings.inherit_tags
+  resource_group      = local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)]
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : null
+  location            = try(local.global_settings.regions[each.value.region], null)
 
 
   #assumed from remote lz only to prevent circular references
@@ -123,26 +124,30 @@ module "public_ip_addresses" {
   source   = "./modules/networking/public_ip_addresses"
   for_each = local.networking.public_ip_addresses
 
-  name                = azurecaf_name.public_ip_addresses[each.key].result
-  location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
-  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
-
-  allocation_method          = try(each.value.allocation_method, "Dynamic")
-  base_tags                  = try(local.global_settings.inherit_tags, false) ? try(local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags, {}) : {}
-  diagnostic_profiles        = try(each.value.diagnostic_profiles, {})
-  diagnostics                = local.combined_diagnostics
-  domain_name_label          = try(each.value.domain_name_label, null)
-  generate_domain_name_label = try(each.value.generate_domain_name_label, false)
-  idle_timeout_in_minutes    = try(each.value.idle_timeout_in_minutes, null)
-  ip_tags                    = try(each.value.ip_tags, null)
-  ip_version                 = try(each.value.ip_version, "IPv4")
-  public_ip_prefix_id        = can(each.value.public_ip_prefix.key) ? local.combined_objects_public_ip_prefixes[try(each.value.public_ip_prefix.lz_key, local.client_config.landingzone_key)][each.value.public_ip_prefix.key].id : try(each.value.public_ip_prefix_id, null)
-  reverse_fqdn               = try(each.value.reverse_fqdn, null)
+  name                       = azurecaf_name.public_ip_addresses[each.key].result
+  global_settings            = local.global_settings
   sku                        = try(each.value.sku, "Basic")
-  sku_tier                   = try(each.value.sku_tier, null)
+  allocation_method          = try(each.value.allocation_method, "Dynamic")
+  ip_version                 = try(each.value.ip_version, "IPv4")
+  idle_timeout_in_minutes    = try(each.value.idle_timeout_in_minutes, null)
+  domain_name_label          = try(each.value.domain_name_label, null)
+  reverse_fqdn               = try(each.value.reverse_fqdn, null)
+  generate_domain_name_label = try(each.value.generate_domain_name_label, false)
   tags                       = try(each.value.tags, null)
-  # TODO - kept availability_zone to support smooth migration to azurerm 3.0
-  zones = can(each.value.zones) ? each.value.zones : try(tolist(each.value.availability_zone), null)
+  ip_tags                    = try(each.value.ip_tags, null)
+  public_ip_prefix_id        = can(each.value.public_ip_prefix.key) ? local.combined_objects_public_ip_prefixes[try(each.value.public_ip_prefix.lz_key, local.client_config.landingzone_key)][each.value.public_ip_prefix.key].id : try(each.value.public_ip_prefix_id, null)
+  zones = coalesce(
+    try(each.value.availability_zone, ""),
+    try(tostring(each.value.zones[0]), ""),
+    try(each.value.sku, "Basic") == "Basic" ? "No-Zone" : "Zone-Redundant"
+  )
+  diagnostic_profiles = try(each.value.diagnostic_profiles, {})
+  diagnostics         = local.combined_diagnostics
+
+  base_tags           = local.global_settings.inherit_tags
+  resource_group      = local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)]
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : null
+  location            = try(local.global_settings.regions[each.value.region], null)
 }
 
 #
@@ -174,7 +179,7 @@ module "public_ip_prefixes" {
   sku                 = try(each.value.sku, "Standard")
   ip_version          = try(each.value.ip_version, "IPv4")
   tags                = try(each.value.tags, null)
-  zones               = try(each.value.zones, null)
+  zones               = try(each.value.zones, "Zone-Redundant")
   prefix_length       = try(each.value.prefix_length, 28)
   create_pips         = try(each.value.create_pips, false)
   diagnostic_profiles = try(each.value.diagnostic_profiles, {})

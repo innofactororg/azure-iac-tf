@@ -34,34 +34,23 @@ aks_clusters = {
 
     network_profile = {
       network_plugin    = "azure"
-      load_balancer_sku = "standard"
+      load_balancer_sku = "Standard"
     }
 
-    azure_active_directory_role_based_access_control = {
-      managed            = true
-      azure_rbac_enabled = true
-      # tenant_id = ""
-      # admin_group_object_ids = ""
-
-      # when managed to set to false
-      # client_app_id = ""
-      # server_app_id = ""
-      # server_app_secret = ""
+    # enable_rbac = true
+    role_based_access_control = {
+      enabled = true
+      azure_active_directory = {
+        managed = true
+      }
     }
 
-    # Replace with azure_active_directory_role_based_access_control
-    # Still supported for backward compatibility
-    # role_based_access_control = {
-    #   enabled = true
-    #   azure_active_directory = {
-    #     managed = true
-    #   }
-    # }
-
-    oms_agent = {
-      log_analytics_key = "central_logs_region1"
+    addon_profile = {
+      oms_agent = {
+        enabled           = true
+        log_analytics_key = "central_logs_region1"
+      }
     }
-
     # admin_groups = {
     #   # ids = []
     #   # azuread_groups = {
@@ -83,7 +72,6 @@ aks_clusters = {
       max_pods              = 30
       node_count            = 1
       os_disk_size_gb       = 512
-      zones                 = [1]
       tags = {
         "project" = "system services"
       }

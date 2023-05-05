@@ -1,1028 +1,397 @@
-variable "global_settings" {
-  default = {
-    default_region = "region1"
-    regions = {
-      region1 = "eastus2"
-      region2 = "centralus"
+output "vnets" {
+  depends_on = [azurerm_virtual_network_peering.peering]
+  value      = module.networking
+}
+
+output "virtual_subnets" {
+  value = module.virtual_subnets
+}
+
+output "public_ip_addresses" {
+  value = module.public_ip_addresses
+}
+
+output "public_ip_prefixes" {
+  value = module.public_ip_prefixes
+}
+
+output "network_watchers" {
+  value = module.network_watchers
+}
+
+
+#
+#
+# Virtual network
+#
+#
+
+module "networking" {
+  depends_on = [module.network_watchers]
+  source     = "./modules/networking/virtual_network"
+  for_each   = local.networking.vnets
+
+  application_security_groups       = local.combined_objects_application_security_groups
+  client_config                     = local.client_config
+  ddos_id                           = try(local.combined_objects_ddos_services[try(each.value.ddos_services_lz_key, local.client_config.landingzone_key)][try(each.value.ddos_services_key, each.value.ddos_services_key)].id, "")
+  diagnostics                       = local.combined_diagnostics
+  global_settings                   = local.global_settings
+  network_security_groups           = module.network_security_groups
+  network_security_group_definition = local.networking.network_security_group_definition
+  network_watchers                  = local.combined_objects_network_watchers
+  route_tables                      = module.route_tables
+  settings                          = each.value
+  tags                              = try(each.value.tags, null)
+
+  base_tags           = local.global_settings.inherit_tags
+  resource_group      = local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)]
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : null
+  location            = try(local.global_settings.regions[each.value.region], null)
+
+
+  #assumed from remote lz only to prevent circular references
+  #
+  # Does not support legacy load_balancers. Prefer lb
+  #
+  remote_dns = {
+    azurerm_firewall  = try(var.remote_objects.azurerm_firewalls, {})
+    azurerm_firewalls = try(var.remote_objects.azurerm_firewalls, {})
+    virtual_machines  = try(var.remote_objects.virtual_machines, {})
+    lb                = try(var.remote_objects.lb, {})
+  }
+}
+
+module "virtual_subnets" {
+  depends_on = [module.networking]
+  source     = "./modules/networking/virtual_network/subnet"
+  for_each   = local.networking.virtual_subnets
+
+  global_settings = local.global_settings
+  settings        = each.value
+
+  name                                           = each.value.name
+  address_prefixes                               = try(each.value.cidr, [])
+  service_endpoints                              = try(each.value.service_endpoints, [])
+  enforce_private_link_endpoint_network_policies = try(each.value.enforce_private_link_endpoint_network_policies, false)
+  enforce_private_link_service_network_policies  = try(each.value.enforce_private_link_service_network_policies, false)
+
+  resource_group_name  = can(each.value.vnet.key) ? local.combined_objects_networking[try(each.value.vnet.lz_key, local.client_config.landingzone_key)][each.value.vnet.key].resource_group_name : split("/", each.value.vnet.id)[4]
+  virtual_network_name = can(each.value.vnet.key) ? local.combined_objects_networking[try(each.value.vnet.lz_key, local.client_config.landingzone_key)][each.value.vnet.key].name : split("/", each.value.vnet.id)[8]
+
+}
+
+resource "azurerm_subnet_route_table_association" "rt" {
+  for_each = {
+    for key, subnet in local.networking.virtual_subnets : key => subnet
+    if try(subnet.route_table_key, null) != null
+  }
+
+  subnet_id      = lookup(module.virtual_subnets, each.key, null).id
+  route_table_id = module.route_tables[each.value.route_table_key].id
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_vnet_association_version" {
+  for_each = {
+    for key, value in local.networking.virtual_subnets : key => value
+    if try(local.networking.network_security_group_definition[value.nsg_key].version, 0) > 0 && try(value.nsg_key, null) != null
+  }
+
+  subnet_id                 = module.virtual_subnets[each.key].id
+  network_security_group_id = module.network_security_groups[each.value.nsg_key].id
+}
+
+
+#
+#
+# Public IP Addresses
+#
+#
+
+# naming convention for public IP address
+resource "azurecaf_name" "public_ip_addresses" {
+  for_each = local.networking.public_ip_addresses
+
+  name          = try(each.value.name, null)
+  resource_type = "azurerm_public_ip"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+module "public_ip_addresses" {
+  source   = "./modules/networking/public_ip_addresses"
+  for_each = local.networking.public_ip_addresses
+
+  name                       = azurecaf_name.public_ip_addresses[each.key].result
+  global_settings            = local.global_settings
+  sku                        = try(each.value.sku, "Basic")
+  allocation_method          = try(each.value.allocation_method, "Dynamic")
+  ip_version                 = try(each.value.ip_version, "IPv4")
+  idle_timeout_in_minutes    = try(each.value.idle_timeout_in_minutes, null)
+  domain_name_label          = try(each.value.domain_name_label, null)
+  reverse_fqdn               = try(each.value.reverse_fqdn, null)
+  generate_domain_name_label = try(each.value.generate_domain_name_label, false)
+  tags                       = try(each.value.tags, null)
+  ip_tags                    = try(each.value.ip_tags, null)
+  public_ip_prefix_id        = can(each.value.public_ip_prefix.key) ? local.combined_objects_public_ip_prefixes[try(each.value.public_ip_prefix.lz_key, local.client_config.landingzone_key)][each.value.public_ip_prefix.key].id : try(each.value.public_ip_prefix_id, null)
+  zones = coalesce(
+    try(each.value.availability_zone, ""),
+    try(tostring(each.value.zones[0]), ""),
+    try(each.value.sku, "Basic") == "Basic" ? "No-Zone" : "Zone-Redundant"
+  )
+  diagnostic_profiles = try(each.value.diagnostic_profiles, {})
+  diagnostics         = local.combined_diagnostics
+
+  base_tags           = local.global_settings.inherit_tags
+  resource_group      = local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)]
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : null
+  location            = try(local.global_settings.regions[each.value.region], null)
+}
+
+#
+#
+# Public IP Prefixes
+#
+#
+
+# naming convention for public IP prefixes
+resource "azurecaf_name" "public_ip_prefixes" {
+  for_each = local.networking.public_ip_prefixes
+
+  name          = try(each.value.name, null)
+  resource_type = "azurerm_public_ip_prefix"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+module "public_ip_prefixes" {
+  source   = "./modules/networking/public_ip_prefixes"
+  for_each = local.networking.public_ip_prefixes
+
+  name                = azurecaf_name.public_ip_prefixes[each.key].result
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
+  location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
+  sku                 = try(each.value.sku, "Standard")
+  ip_version          = try(each.value.ip_version, "IPv4")
+  tags                = try(each.value.tags, null)
+  zones               = try(each.value.zones, "Zone-Redundant")
+  prefix_length       = try(each.value.prefix_length, 28)
+  create_pips         = try(each.value.create_pips, false)
+  diagnostic_profiles = try(each.value.diagnostic_profiles, {})
+  diagnostics         = local.combined_diagnostics
+  base_tags           = try(local.global_settings.inherit_tags, false) ? try(local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags, {}) : {}
+}
+
+#
+#
+# Vnet peering
+#  (Support vnet in remote tfstates)
+#
+
+# naming convention for peering name
+resource "azurecaf_name" "peering" {
+  for_each = local.networking.vnet_peerings
+
+  name          = try(each.value.name, "")
+  resource_type = "azurerm_virtual_network_peering"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+# The code tries to peer to a vnet created in the same landing zone. If it fails it tries with the data remote state
+resource "azurerm_virtual_network_peering" "peering" {
+  depends_on = [module.networking]
+  for_each   = local.networking.vnet_peerings
+
+  name                         = azurecaf_name.peering[each.key].result
+  virtual_network_name         = can(each.value.from.virtual_network_name) ? each.value.from.virtual_network_name : local.combined_objects_networking[try(each.value.from.lz_key, local.client_config.landingzone_key)][each.value.from.vnet_key].name
+  resource_group_name          = can(each.value.from.resource_group_name) ? each.value.from.resource_group_name : local.combined_objects_networking[try(each.value.from.lz_key, local.client_config.landingzone_key)][each.value.from.vnet_key].resource_group_name
+  remote_virtual_network_id    = can(each.value.to.remote_virtual_network_id) ? each.value.to.remote_virtual_network_id : local.combined_objects_networking[try(each.value.to.lz_key, local.client_config.landingzone_key)][each.value.to.vnet_key].id
+  allow_virtual_network_access = try(each.value.allow_virtual_network_access, true)
+  allow_forwarded_traffic      = try(each.value.allow_forwarded_traffic, false)
+  allow_gateway_transit        = try(each.value.allow_gateway_transit, false)
+  use_remote_gateways          = try(each.value.use_remote_gateways, false)
+
+}
+
+# Allow creating from and to in the same deployment when vnets are in different subscriptions
+# (azurerm does not access the resource id of the vnet in the from)
+# use the variable vnet_peerings_v1
+resource "azapi_resource" "virtualNetworkPeerings" {
+  depends_on = [module.networking]
+  for_each   = local.networking.vnet_peerings_v1
+
+  type      = "Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2021-05-01"
+  name      = each.value.name
+  parent_id = can(each.value.from.id) ? each.value.from.id : local.combined_objects_networking[try(each.value.from.lz_key, local.client_config.landingzone_key)][each.value.from.vnet_key].id
+
+  body = jsonencode({
+    properties = {
+      allowForwardedTraffic     = try(each.value.allow_forwarded_traffic, false)
+      allowGatewayTransit       = try(each.value.allow_gateway_transit, false)
+      allowVirtualNetworkAccess = try(each.value.allow_virtual_network_access, true)
+      doNotVerifyRemoteGateways = try(each.value.do_not_verify_remote_gateways, false)
+      useRemoteGateways         = try(each.value.use_remote_gateways, false)
+      remoteVirtualNetwork = {
+        id = can(each.value.to.remote_virtual_network_id) || can(each.value.to.id) ? try(each.value.to.remote_virtual_network_id, each.value.to.id) : local.combined_objects_networking[try(each.value.to.lz_key, local.client_config.landingzone_key)][each.value.to.vnet_key].id
+      }
     }
+  })
+
+}
+
+#
+#
+# Route tables and routes
+#
+#
+resource "azurecaf_name" "route_tables" {
+  for_each = local.networking.route_tables
+
+  name          = try(each.value.name, null)
+  resource_type = "azurerm_route_table"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+module "route_tables" {
+  source   = "./modules/networking/route_tables"
+  for_each = local.networking.route_tables
+
+  name                          = azurecaf_name.route_tables[each.key].result
+  location                      = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
+  resource_group_name           = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
+  base_tags                     = try(local.global_settings.inherit_tags, false) ? try(local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags, {}) : {}
+  disable_bgp_route_propagation = try(each.value.disable_bgp_route_propagation, null)
+  tags                          = try(each.value.tags, null)
+}
+
+resource "azurecaf_name" "routes" {
+  for_each = local.networking.azurerm_routes
+
+  name          = try(each.value.name, null)
+  resource_type = "azurerm_route"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+
+module "routes" {
+  source   = "./modules/networking/routes"
+  for_each = local.networking.azurerm_routes
+
+  name                   = azurecaf_name.routes[each.key].result
+  resource_group_name    = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
+  route_table_name       = module.route_tables[each.value.route_table_key].name
+  address_prefix         = each.value.address_prefix
+  next_hop_type          = each.value.next_hop_type
+  next_hop_in_ip_address = try(lower(each.value.next_hop_type), null) == "virtualappliance" ? try(each.value.next_hop_in_ip_address, null) : null
+  next_hop_in_ip_address_fw = try(lower(each.value.next_hop_type), null) == "virtualappliance" ? try(coalesce(
+    try(local.combined_objects_azurerm_firewalls[try(each.value.private_ip_keys.azurerm_firewall.lz_key, local.client_config.landingzone_key)][each.value.private_ip_keys.azurerm_firewall.key].ip_configuration[each.value.private_ip_keys.azurerm_firewall.interface_index].private_ip_address, null),
+    try(local.combined_objects_azurerm_firewalls[try(each.value.lz_key, local.client_config.landingzone_key)][each.value.private_ip_keys.azurerm_firewall.key].ip_configuration[each.value.private_ip_keys.azurerm_firewall.interface_index].private_ip_address, null)
+  ), null) : null
+
+}
+
+#
+#
+# Azure DDoS
+#
+#
+
+# naming convention
+resource "azurecaf_name" "ddos_protection_plan" {
+  for_each = local.networking.ddos_services
+
+  name          = try(each.value.name, null)
+  resource_type = "azurerm_network_ddos_protection_plan"
+  prefixes      = local.global_settings.prefixes
+  random_length = local.global_settings.random_length
+  clean_input   = true
+  passthrough   = local.global_settings.passthrough
+  use_slug      = local.global_settings.use_slug
+}
+
+resource "azurerm_network_ddos_protection_plan" "ddos_protection_plan" {
+  for_each = local.networking.ddos_services
+
+  name                = azurecaf_name.ddos_protection_plan[each.key].result
+  location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
+  tags                = try(local.global_settings.inherit_tags, false) ? merge(try(local.combined_objects_resource_groups[try(each.value.lz_key, local.client_config.landingzone_key)][each.value.resource_group_key].tags, {}), try(each.value.tags, {})) : try(each.value.tags, {})
+}
+
+output "ddos_services" {
+  value = azurerm_network_ddos_protection_plan.ddos_protection_plan
+}
+
+#
+#
+# Network Watchers
+#
+#
+module "network_watchers" {
+  source   = "./modules/networking/network_watcher"
+  for_each = local.networking.network_watchers
+
+  location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
+  resource_group_name = can(each.value.resource_group.name) || can(each.value.resource_group_name) ? try(each.value.resource_group.name, each.value.resource_group_name) : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group_key, each.value.resource_group.key)].name
+  base_tags           = try(local.global_settings.inherit_tags, false) ? try(local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].tags, {}) : {}
+  settings            = each.value
+  tags                = try(each.value.tags, null)
+  global_settings     = local.global_settings
+}
+
+
+
+
+module "relay_hybrid_connection" {
+  source   = "./modules/networking/relay_hybrid_connection"
+  for_each = local.networking.relay_hybrid_connection
+
+  global_settings     = local.global_settings
+  client_config       = local.client_config
+  settings            = each.value
+  resource_group_name = can(each.value.resource_group.name) ? each.value.resource_group.name : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][each.value.resource_group.key].name
+
+  remote_objects = {
+    resource_group  = local.combined_objects_resource_groups
+    relay_namespace = local.combined_objects_relay_namespace
   }
 }
+output "relay_hybrid_connection" {
+  value = module.relay_hybrid_connection
+}
 
-variable "landingzone" {
-  default = {
-    backend_type        = "azurerm"
-    global_settings_key = "launchpad"
-    level               = "level0"
-    key                 = "examples"
+module "relay_namespace" {
+  source   = "./modules/networking/relay_namespace"
+  for_each = local.networking.relay_namespace
+
+  global_settings = local.global_settings
+  client_config   = local.client_config
+  settings        = each.value
+
+  resource_group_name = can(each.value.resource_group.name) ? each.value.resource_group.name : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][each.value.resource_group.key].name
+  location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
+
+  remote_objects = {
+    resource_group = local.combined_objects_resource_groups
   }
 }
-
-variable "var_folder_path" {
-  default = ""
-}
-
-variable "provider_azurerm_features_keyvault" {
-  default = {
-    purge_soft_delete_on_destroy = true
-  }
-}
-# variable "cloud" {
-#   default = {}
-# }
-# variable "acrLoginServerEndpoint" {
-#   default = ".azurecr.io"
-# }
-# variable "attestationEndpoint" {
-#   default = ".attest.azure.net"
-# }
-# variable "azureDatalakeAnalyticsCatalogAndJobEndpoint" {
-#   default = "azuredatalakeanalytics.net"
-# }
-# variable "azureDatalakeStoreFileSystemEndpoint" {
-#   default = "azuredatalakestore.net"
-# }
-# variable "keyvaultDns" {
-#   default = ".vault.azure.net"
-# }
-# variable "mariadbServerEndpoint" {
-#   default = ".mariadb.database.azure.com"
-# }
-# variable "mhsmDns" {
-#   default = ".managedhsm.azure.net"
-# }
-# variable "mysqlServerEndpoint" {
-#   default = ".mysql.database.azure.com"
-# }
-# variable "postgresqlServerEndpoint" {
-#   default = ".postgres.database.azure.com"
-# }
-# variable "sqlServerHostname" {
-#   default = ".database.windows.net"
-# }
-# variable "storageEndpoint" {
-#   default = "core.windows.net"
-# }
-# variable "storageSyncEndpoint" {
-#   default = "afs.azure.net"
-# }
-# variable "synapseAnalyticsEndpoint" {
-#   default = ".dev.azuresynapse.net"
-# }
-# variable "activeDirectory" {
-#   default = "https://login.microsoftonline.com"
-# }
-# variable "activeDirectoryDataLakeResourceId" {
-#   default = "https://datalake.azure.net/"
-# }
-# variable "activeDirectoryGraphResourceId" {
-#   default = "https://graph.windows.net/"
-# }
-# variable "activeDirectoryResourceId" {
-#   default = "https://management.core.windows.net/"
-# }
-# variable "appInsightsResourceId" {
-#   default = "https://api.applicationinsights.io"
-# }
-# variable "appInsightsTelemetryChannelResourceId" {
-#   default = "https://dc.applicationinsights.azure.com/v2/track"
-# }
-# variable "attestationResourceId" {
-#   default = "https://attest.azure.net"
-# }
-# variable "azmirrorStorageAccountResourceId" {
-#   default = "null"
-# }
-# variable "batchResourceId" {
-#   default = "https://batch.core.windows.net/"
-# }
-# variable "gallery" {
-#   default = "https://gallery.azure.com/"
-# }
-# variable "logAnalyticsResourceId" {
-#   default = "https://api.loganalytics.io"
-# }
-# variable "management" {
-#   default = "https://management.core.windows.net/"
-# }
-# variable "mediaResourceId" {
-#   default = "https://rest.media.azure.net"
-# }
-# variable "microsoftGraphResourceId" {
-#   default = "https://graph.microsoft.com/"
-# }
-# variable "ossrdbmsResourceId" {
-#   default = "https://ossrdbms-aad.database.windows.net"
-# }
-# variable "portal" {
-#   default = "https://portal.azure.com"
-# }
-# variable "resourceManager" {
-#   default = "https://management.azure.com/"
-# }
-# variable "sqlManagement" {
-#   default = "https://management.core.windows.net:8443/"
-# }
-# variable "synapseAnalyticsResourceId" {
-#   default = "https://dev.azuresynapse.net"
-# }
-# variable "vmImageAliasDoc" {
-#   default = "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/arm-compute/quickstart-templates/aliases.json"
-# }
-variable "environment" {
-  default = "sandpit"
-}
-variable "rover_version" {
-  default = null
-}
-variable "logged_user_objectId" {
-  default = null
-}
-variable "logged_aad_app_objectId" {
-  default = null
-}
-variable "tags" {
-  default = null
-  type    = map(any)
-}
-variable "subscription_billing_role_assignments" {
-  default = {}
-}
-variable "app_service_environments" {
-  default = {}
-}
-variable "app_service_environments_v3" {
-  default = {}
-}
-variable "app_service_plans" {
-  default = {}
-}
-variable "app_services" {
-  default = {}
-}
-variable "consumption_budgets" {
-  default = {}
-}
-variable "diagnostics_definition" {
-  default = {}
-}
-variable "resource_groups" {
-  default = {}
-}
-variable "network_security_group_definition" {
-  default = {}
-}
-variable "route_tables" {
-  default = {}
-}
-variable "azurerm_routes" {
-  default = {}
-}
-variable "vnets" {
-  default = {}
-}
-variable "virtual_subnets" {
-  default = {}
-}
-variable "azurerm_redis_caches" {
-  default = {}
-}
-variable "mssql_servers" {
-  default = {}
-}
-variable "mssql_managed_instances" {
-  default = {}
-}
-variable "mssql_managed_instances_secondary" {
-  default = {}
-}
-variable "mssql_databases" {
-  default = {}
-}
-variable "mssql_managed_databases" {
-  default = {}
-}
-variable "mssql_managed_databases_restore" {
-  default = {}
-}
-variable "mssql_managed_databases_backup_ltr" {
-  default = {}
-}
-variable "mssql_elastic_pools" {
-  default = {}
-}
-variable "mariadb_servers" {
-  default = {}
-}
-variable "mariadb_databases" {
-  default = {}
-}
-variable "mssql_failover_groups" {
-  default = {}
-}
-variable "mssql_mi_failover_groups" {
-  default = {}
-}
-variable "mssql_mi_administrators" {
-  default = {}
-}
-variable "mssql_mi_tdes" {
-  default = {}
-}
-variable "mssql_mi_secondary_tdes" {
-  default = {}
-}
-variable "storage_accounts" {
-  default = {}
-}
-variable "azuread_credential_policies" {
-  default = {}
-}
-variable "azuread_applications" {
-  default = {}
-}
-variable "azuread_credentials" {
-  default = {}
-}
-variable "azuread_groups_membership" {
-  default = {}
-}
-variable "azuread_service_principals" {
-  default = {}
-}
-variable "azuread_service_principal_passwords" {
-  default = {}
-}
-variable "azuread_groups" {
-  default = {}
-}
-variable "azuread_roles" {
-  default = {}
-}
-variable "keyvaults" {
-  default = {}
-}
-variable "keyvault_access_policies" {
-  default = {}
-}
-variable "keyvault_certificate_issuers" {
-  default = {}
-}
-variable "keyvault_keys" {
-  default = {}
-}
-variable "keyvault_certificate_requests" {
-  default = {}
-}
-variable "keyvault_certificates" {
-  default = {}
-}
-variable "virtual_machines" {
-  default = {}
-}
-variable "virtual_machine_scale_sets" {
-  default = {}
-}
-variable "bastion_hosts" {
-  default = {}
-}
-variable "public_ip_addresses" {
-  default = {}
-}
-variable "diagnostic_storage_accounts" {
-  default = {}
-}
-variable "diagnostic_event_hub_namespaces" {
-  default = {}
-}
-variable "diagnostic_log_analytics" {
-  default = {}
-}
-variable "managed_identities" {
-  default = {}
-}
-variable "private_dns" {
-  default = {}
-}
-variable "synapse_workspaces" {
-  default = {}
-}
-variable "azurerm_application_insights" {
-  default = {}
-}
-variable "azurerm_application_insights_web_test" {
-  default = {}
-}
-variable "azurerm_application_insights_standard_web_test" {
-  default = {}
-}
-variable "role_mapping" {
-  default = {}
-}
-variable "aks_clusters" {
-  default = {}
-}
-variable "azure_container_registries" {
-  default = {}
-}
-variable "batch_accounts" {
-  default = {}
-}
-variable "batch_applications" {
-  default = {}
-}
-variable "batch_certificates" {
-  default = {}
-}
-variable "batch_jobs" {
-  default = {}
-}
-variable "batch_pools" {
-  default = {}
-}
-variable "databricks_workspaces" {
-  default = {}
-}
-variable "machine_learning_workspaces" {
-  default = {}
-}
-variable "monitor_action_groups" {
-  default = {}
-}
-variable "monitor_autoscale_settings" {
-  default = {}
-}
-variable "monitoring" {
-  default = {}
-}
-variable "virtual_hubs" {
-  default = {}
-}
-variable "virtual_wans" {
-  default = {}
-}
-variable "event_hub_namespaces" {
-  default = {}
-}
-variable "application_gateways" {
-  default = {}
-}
-variable "application_gateway_platforms" {
-  default = {}
-}
-variable "application_gateway_applications" {
-  default = {}
-}
-variable "application_gateway_applications_v1" {
-  default = {}
-}
-variable "application_gateway_waf_policies" {
-  default = {}
-}
-variable "mysql_servers" {
-  default = {}
-}
-variable "postgresql_flexible_servers" {
-  default = {}
-}
-variable "postgresql_servers" {
-  default = {}
-}
-variable "cosmos_db" {
-  default = {}
-}
-variable "log_analytics" {
-  default = {}
-}
-variable "logic_app_workflow" {
-  default = {}
-}
-variable "logic_app_standard" {
-  default = {}
-}
-variable "logic_app_integration_account" {
-  default = {}
-}
-variable "recovery_vaults" {
-  default = {}
-}
-variable "availability_sets" {
-  default = {}
-}
-variable "proximity_placement_groups" {
-  default = {}
-}
-variable "network_watchers" {
-  default = {}
-}
-variable "virtual_network_gateways" {
-  default = {}
-}
-variable "virtual_network_gateway_connections" {
-  default = {}
-}
-variable "express_route_circuits" {
-  default = {}
-}
-variable "express_route_circuit_authorizations" {
-  default = {}
-}
-
-variable "shared_image_galleries" {
-  default = {}
-}
-
-variable "image_definitions" {
-  default = {}
-}
-
-variable "diagnostics_destinations" {
-  default = {}
-}
-variable "vnet_peerings" {
-  default = {}
-}
-variable "vnet_peerings_v1" {
-  default = {}
-}
-
-variable "packer_service_principal" {
-  default = {}
-}
-
-variable "packer_build" {
-  default = {}
-}
-
-variable "azuread_api_permissions" {
-  default = {}
-}
-
-variable "keyvault_access_policies_azuread_apps" {
-  default = {}
-}
-
-variable "cosmos_dbs" {
-  default = {}
-}
-variable "dynamic_keyvault_secrets" {
-  default = {}
-}
-variable "dynamic_keyvault_certificates" {
-  default = {}
-}
-variable "front_doors" {
-  default = {}
-}
-variable "front_door_waf_policies" {
-  default = {}
-}
-variable "dns_zones" {
-  default = {}
-}
-variable "dns_zone_records" {
-  default = {}
-}
-
-variable "private_endpoints" {
-  default = {}
-}
-
-variable "event_hubs" {
-  default = {}
-}
-variable "automations" {
-  default = {}
-}
-variable "automation_schedules" {
-  default = {}
-}
-variable "automation_runbooks" {
-  default = {}
-}
-variable "automation_log_analytics_links" {
-  default = {}
-}
-
-variable "local_network_gateways" {
-  default = {}
-}
-
-variable "domain_name_registrations" {
-  default = {}
-}
-
-variable "azuread_apps" {
-  default = {}
-  type    = map(any)
-}
-variable "azuread_users" {
-  default = {}
-  type    = map(any)
-}
-variable "custom_role_definitions" {
-  default = {}
-}
-variable "azurerm_firewalls" {
-  default = {}
-}
-variable "azurerm_firewall_network_rule_collection_definition" {
-  default = {}
-}
-variable "azurerm_firewall_application_rule_collection_definition" {
-  default = {}
-}
-variable "azurerm_firewall_nat_rule_collection_definition" {
-  default = {}
-}
-variable "event_hub_auth_rules" {
-  default = {}
-}
-
-variable "netapp_accounts" {
-  default = {}
-}
-
-variable "load_balancers" {
-  default = {}
-}
-
-variable "ip_groups" {
-  default = {}
-}
-variable "container_groups" {
-  default = {}
-}
-variable "event_hub_namespace_auth_rules" {
-  default = {}
-}
-variable "event_hub_consumer_groups" {
-  default = {}
-}
-variable "application_security_groups" {
-  default = {}
-}
-
-variable "azurerm_firewall_policies" {
-  default = {}
-}
-
-variable "azurerm_firewall_policy_rule_collection_groups" {
-  default = {}
-}
-variable "disk_encryption_sets" {
-  default = {}
-}
-variable "vhub_peerings" {
-  default     = {}
-  description = "Use virtual_hub_connections instead of vhub_peerings. It will be removed in version 6.0"
-}
-variable "virtual_hub_connections" {
-  default = {}
-}
-variable "virtual_hub_route_table_routes" {
-  default = {}
-}
-variable "virtual_hub_route_tables" {
-  default = {}
-}
-variable "virtual_hub_er_gateway_connections" {
-  default = {}
-}
-variable "wvd_application_groups" {
-  default = {}
-}
-variable "wvd_workspaces" {
-  default = {}
-}
-variable "wvd_host_pools" {
-  default = {}
-}
-variable "wvd_applications" {
-  default = {}
-}
-variable "lighthouse_definitions" {
-  default = {}
-}
-variable "dedicated_host_groups" {
-  default = {}
-}
-variable "dedicated_hosts" {
-  default = {}
-}
-variable "vpn_sites" {
-  default = {}
-}
-variable "vpn_gateway_connections" {
-  default = {}
-}
-variable "servicebus_namespaces" {
-  default = {}
-}
-variable "servicebus_topics" {
-  default = {}
-}
-variable "servicebus_queues" {
-  default = {}
-}
-variable "storage_account_queues" {
-  default = {}
-}
-variable "storage_account_blobs" {
-  default = {}
-}
-variable "storage_containers" {
-  default = {}
-}
-variable "vmware_private_clouds" {
-  default = {}
-}
-variable "vmware_clusters" {
-  default = {}
-}
-variable "vmware_express_route_authorizations" {
-  default = {}
-}
-variable "nat_gateways" {
-  default = {}
-}
-variable "cognitive_services_account" {
-  default = {}
-}
-variable "database_migration_services" {
-  default = {}
-}
-variable "database_migration_projects" {
-  default = {}
-}
-variable "data_factory" {
-  default = {}
-}
-variable "data_factory_pipeline" {
-  default = {}
-}
-variable "data_factory_trigger_schedule" {
-  default = {}
-}
-variable "data_factory_dataset_azure_blob" {
-  default = {}
-}
-variable "data_factory_dataset_cosmosdb_sqlapi" {
-  default = {}
-}
-variable "data_factory_dataset_delimited_text" {
-  default = {}
-}
-variable "data_factory_dataset_http" {
-  default = {}
-}
-variable "data_factory_dataset_json" {
-  default = {}
-}
-variable "data_factory_dataset_mysql" {
-  default = {}
-}
-variable "data_factory_dataset_postgresql" {
-  default = {}
-}
-variable "data_factory_dataset_sql_server_table" {
-  default = {}
-}
-variable "data_factory_linked_service_azure_blob_storage" {
-  default = {}
-}
-variable "data_factory_linked_service_cosmosdb" {
-  default = {}
-}
-variable "data_factory_linked_service_web" {
-  default = {}
-}
-variable "data_factory_linked_service_mysql" {
-  default = {}
-}
-variable "data_factory_linked_service_postgresql" {
-  default = {}
-}
-variable "data_factory_linked_service_sql_server" {
-  default = {}
-}
-variable "data_factory_linked_service_azure_databricks" {
-  default = {}
-}
-variable "integration_service_environment" {
-  default = {}
-}
-variable "logic_app_action_http" {
-  default = {}
-}
-variable "logic_app_action_custom" {
-  default = {}
-}
-variable "logic_app_trigger_http_request" {
-  default = {}
-}
-variable "logic_app_trigger_recurrence" {
-  default = {}
-}
-variable "logic_app_trigger_custom" {
-  default = {}
-}
-variable "kusto_clusters" {
-  default = {}
-}
-variable "kusto_databases" {
-  default = {}
-}
-variable "kusto_attached_database_configurations" {
-  default = {}
-}
-variable "kusto_cluster_customer_managed_keys" {
-  default = {}
-}
-variable "kusto_cluster_principal_assignments" {
-  default = {}
-}
-variable "kusto_database_principal_assignments" {
-  default = {}
-}
-variable "kusto_eventgrid_data_connections" {
-  default = {}
-}
-variable "kusto_eventhub_data_connections" {
-  default = {}
-}
-variable "kusto_iothub_data_connections" {
-  default = {}
-}
-variable "private_dns_vnet_links" {
-  default = {}
-}
-variable "communication_services" {
-  default = {}
-}
-variable "machine_learning_compute_instance" {
-  default = {}
-}
-variable "data_factory_integration_runtime_self_hosted" {
-  default = {}
-}
-variable "data_factory_integration_runtime_azure_ssis" {
-  default = {}
-}
-variable "frontdoor_rules_engine" {
-  default = {}
-}
-variable "frontdoor_custom_https_configuration" {
-  default = {}
-}
-variable "cdn_endpoint" {
-  default = {}
-}
-variable "cdn_profile" {
-  default = {}
-}
-variable "function_apps" {
-  default = {}
-}
-variable "active_directory_domain_service" {
-  default = {}
-}
-variable "active_directory_domain_service_replica_set" {
-  default = {}
-}
-variable "mysql_flexible_server" {
-  default = {}
-}
-
-variable "signalr_services" {
-  default = {}
-}
-variable "api_management" {
-  default = {}
-}
-variable "api_management_api" {
-  default = {}
-}
-variable "api_management_api_diagnostic" {
-  default = {}
-}
-variable "api_management_logger" {
-  default = {}
-}
-variable "api_management_api_operation" {
-  default = {}
-}
-variable "api_management_backend" {
-  default = {}
-}
-variable "api_management_api_policy" {
-  default = {}
-}
-variable "api_management_api_operation_policy" {
-  default = {}
-}
-variable "api_management_api_operation_tag" {
-  default = {}
-}
-variable "api_management_user" {
-  default = {}
-}
-variable "api_management_custom_domain" {
-  default = {}
-}
-variable "api_management_diagnostic" {
-  default = {}
-}
-variable "api_management_certificate" {
-  default = {}
-}
-variable "api_management_gateway" {
-  default = {}
-}
-variable "api_management_gateway_api" {
-  default = {}
-}
-variable "api_management_group" {
-  default = {}
-}
-variable "api_management_subscription" {
-  default = {}
-}
-variable "api_management_product" {
-  default = {}
-}
-variable "lb" {
-  default = {}
-}
-variable "lb_backend_address_pool" {
-  default = {}
-}
-variable "lb_backend_address_pool_address" {
-  default = {}
-}
-variable "lb_nat_pool" {
-  default = {}
-}
-variable "lb_nat_rule" {
-  default = {}
-}
-variable "lb_outbound_rule" {
-  default = {}
-}
-variable "lb_probe" {
-  default = {}
-}
-variable "lb_rule" {
-  default = {}
-}
-variable "network_interface_backend_address_pool_association" {
-  default = {}
-}
-variable "digital_twins_instances" {
-  description = "Digital Twins Instances"
-  default     = {}
-}
-
-variable "digital_twins_endpoint_eventhubs" {
-  description = "Digital Twins Endpoints Eventhubs"
-  default     = {}
-}
-
-variable "digital_twins_endpoint_eventgrids" {
-  description = "Digital Twins Endpoints Eventgrid"
-  default     = {}
-}
-
-variable "digital_twins_endpoint_servicebuses" {
-  description = "Digital Twins Endpoints Service Bus"
-  default     = {}
-}
-
-variable "monitor_metric_alert" {
-  default = {}
-}
-variable "monitor_activity_log_alert" {
-  default = {}
-}
-variable "log_analytics_storage_insights" {
-  default = {}
-}
-variable "eventgrid_domain" {
-  default = {}
-}
-variable "eventgrid_topic" {
-  default = {}
-}
-variable "eventgrid_event_subscription" {
-  default = {}
-}
-variable "eventgrid_domain_topic" {
-  default = {}
-}
-variable "relay_hybrid_connection" {
-  default = {}
-}
-variable "relay_namespace" {
-  default = {}
-}
-variable "purview_accounts" {
-  default = {}
-}
-variable "app_config" {
-  default = {}
-}
-variable "cosmosdb_sql_databases" {
-  default = {}
-}
-variable "sentinel" {
-  default = {}
-}
-variable "sentinel_automation_rules" {
-  default = {}
-}
-variable "sentinel_watchlists" {
-  default = {}
-}
-variable "sentinel_watchlist_items" {
-  default = {}
-}
-variable "sentinel_ar_fusions" {
-  default = {}
-}
-variable "sentinel_ar_ml_behavior_analytics" {
-  default = {}
-}
-variable "sentinel_ar_ms_security_incidents" {
-  default = {}
-}
-variable "sentinel_ar_scheduled" {
-  default = {}
-}
-variable "sentinel_dc_aad" {
-  default = {}
-}
-variable "sentinel_dc_app_security" {
-  default = {}
-}
-variable "sentinel_dc_aws" {
-  default = {}
-}
-variable "sentinel_dc_azure_threat_protection" {
-  default = {}
-}
-variable "sentinel_dc_ms_threat_protection" {
-  default = {}
-}
-variable "sentinel_dc_office_365" {
-  default = {}
-}
-variable "sentinel_dc_security_center" {
-  default = {}
-}
-variable "sentinel_dc_threat_intelligence" {
-  default = {}
-}
-variable "public_ip_prefixes" {
-  default = {}
-}
-variable "runbooks" {
-  default = {}
-}
-variable "backup_vaults" {
-  default = {}
-}
-variable "backup_vault_policies" {
-  default = {}
-}
-variable "backup_vault_instances" {
-  default = {}
-}
-variable "traffic_manager_azure_endpoint" {
-  default = {}
-}
-variable "traffic_manager_external_endpoint" {
-  default = {}
-}
-variable "traffic_manager_nested_endpoint" {
-  default = {}
-}
-variable "traffic_manager_profile" {
-  default = {}
-}
-variable "resource_provider_registration" {
-  default = {}
-}
-variable "static_sites" {
-  default = {}
-}
-variable "aro_clusters" {
-  default = {}
-}
-variable "web_pubsubs" {
-  default = {}
-}
-variable "web_pubsub_hubs" {
-  default = {}
-}
-variable "aadb2c_directory" {
-  default = {}
+output "relay_namespace" {
+  value = module.relay_namespace
 }

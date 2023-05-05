@@ -68,12 +68,10 @@ api_management_custom_domain = {
     api_management = {
       key = "apim1"
     }
-    gateways = {
-      gw1 = {
-        host_name = "api.example.com"
-        key_vault_certificate = {
-          certificate_request_key = "example"
-        }
+    proxy = {
+      host_name = "api.example.com"
+      key_vault_certificate = {
+        certificate_request_key = "example"
       }
     }
 

@@ -2,8 +2,8 @@
 
 resource "azurerm_public_ip" "pip" {
   name                    = var.name
-  resource_group_name     = var.resource_group_name
-  location                = var.location
+  resource_group_name     = local.resource_group_name
+  location                = local.location
   allocation_method       = var.allocation_method
   domain_name_label       = var.generate_domain_name_label ? var.name : var.domain_name_label
   idle_timeout_in_minutes = var.idle_timeout_in_minutes
