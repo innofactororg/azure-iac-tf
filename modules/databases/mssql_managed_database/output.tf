@@ -5,6 +5,6 @@ output "name" {
 }
 
 output "id" {
-  value       = jsondecode(azurerm_resource_group_template_deployment.manageddb.output_content).id.value
+  value       = lookup(azurerm_template_deployment.manageddb.outputs, "id")
   description = "SQL Managed DB Id"
 }

@@ -15,7 +15,7 @@ resource_groups = {
 automations = {
   auto1 = {
     name               = "automation"
-    sku                = "Basic"
+    sku                = "basic"
     resource_group_key = "automation"
   }
 }

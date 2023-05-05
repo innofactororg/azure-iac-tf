@@ -20,7 +20,7 @@ aks_clusters = {
 
     network_policy = {
       network_plugin    = "azure"
-      load_balancer_sku = "standard"
+      load_balancer_sku = "Standard"
     }
 
     private_cluster_enabled = true

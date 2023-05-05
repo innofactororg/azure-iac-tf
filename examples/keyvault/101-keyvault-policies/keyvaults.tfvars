@@ -12,7 +12,7 @@ keyvaults = {
     creation_policies = {
       logged_in_user = {
         secret_permissions      = ["Set", "Get", "List", "Delete", "Purge"]
-        certificate_permissions = ["ManageContacts", "ManageIssuers"]
+        certificate_permissions = ["managecontacts", "manageissuers"]
       }
     }
 
@@ -47,7 +47,7 @@ keyvaults = {
     creation_policies = {
       logged_in_user = {
         secret_permissions      = ["Set", "Get", "List", "Delete", "Purge"]
-        certificate_permissions = ["ManageContacts", "ManageIssuers"]
+        certificate_permissions = ["managecontacts", "manageissuers"]
       }
     }
 
