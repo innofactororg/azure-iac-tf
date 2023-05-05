@@ -7,4 +7,3 @@ data "azurerm_storage_account" "postgresql_va" {
   resource_group_name = var.storage_accounts[var.settings.threat_detection_policy.storage_account_key].resource_group_name
 }
 
-

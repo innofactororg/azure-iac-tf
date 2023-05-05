@@ -1,8 +1,8 @@
 resource "azurerm_postgresql_server" "postgresql" {
 
   name                = azurecaf_name.postgresql.result
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  resource_group_name = local.resource_group_name
+  location            = local.location
   version             = var.settings.version
   sku_name            = var.settings.sku_name
 
@@ -91,7 +91,6 @@ resource "azurerm_key_vault_secret" "postgresql_fqdn" {
   value        = azurerm_postgresql_server.postgresql.fqdn
   key_vault_id = var.keyvault_id
 }
-
 
 
 
