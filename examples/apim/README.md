@@ -76,7 +76,6 @@
 |security|tls_rsa_with_aes128_gcm_sha256_ciphers_enabled| Should the `TLS_RSA_WITH_AES_128_GCM_SHA256` cipher be enabled? Defaults to `false`.|||False|
 |security|tls_rsa_with_aes256_cbc_sha256_ciphers_enabled| Should the `TLS_RSA_WITH_AES_256_CBC_SHA256` cipher be enabled? Defaults to `false`.|||False|
 |security|tls_rsa_with_aes256_cbc_sha_ciphers_enabled| Should the `TLS_RSA_WITH_AES_256_CBC_SHA` cipher be enabled? Defaults to `false`.|||False|
-|security|enable_triple_des_ciphers| Should the `TLS_RSA_WITH_3DES_EDE_CBC_SHA` cipher be enabled for alL TLS versions (1.0, 1.1 and 1.2)? Defaults to `false`.|||False|
 |security|triple_des_ciphers_enabled| Should the `TLS_RSA_WITH_3DES_EDE_CBC_SHA` cipher be enabled for alL TLS versions (1.0, 1.1 and 1.2)? Defaults to `false`.|||False|
 |security|disable_backend_ssl30| Should SSL 3.0 be disabled on the backend of the gateway? This property was mistakenly inverted and `true` actually enables it. Defaults to `false`.|||False|
 |security|disable_backend_tls10| Should TLS 1.0 be disabled on the backend of the gateway? This property was mistakenly inverted and `true` actually enables it. Defaults to `false`.|||False|
