@@ -22,7 +22,6 @@ variable "keyvaults" {
   default = {}
 }
 variable "resource_group_name" {}
-variable "location" {}
 variable "settings" {}
 variable "tags" {
   default = {}
