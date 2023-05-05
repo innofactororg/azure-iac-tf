@@ -8,7 +8,7 @@ resource "azurerm_public_ip_prefix" "pip_prefix" {
   prefix_length       = var.prefix_length
   tags                = local.tags
   sku                 = var.sku
-  zones               = var.zones
+  availability_zone   = var.zones
   ip_version          = var.ip_version
 
 }

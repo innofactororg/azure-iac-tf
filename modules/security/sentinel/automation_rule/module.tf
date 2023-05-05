@@ -27,7 +27,8 @@ resource "azurerm_sentinel_automation_rule" "automation_rule" {
       tenant_id = action_playbook.value.tenantId
     }
   }
-
+  }
+  
   dynamic "condition" {
     for_each = var.condition_type == null ? [] : var.condition_type
     content {
