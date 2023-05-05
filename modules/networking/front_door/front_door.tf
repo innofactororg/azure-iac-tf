@@ -14,9 +14,13 @@ resource "azurecaf_name" "frontdoor" {
 resource "azurerm_frontdoor" "frontdoor" {
   name                                         = azurecaf_name.frontdoor.result
   resource_group_name                          = var.resource_group_name
-  enforce_backend_pools_certificate_name_check = try(var.settings.certificate_name_check, false)
+  
   tags                                         = local.tags
 
+  backend_pool_settings {
+    enforce_backend_pools_certificate_name_check = try(var.settings.certificate_name_check, false)
+    backend_pools_send_receive_timeout_seconds = 60
+  }
   dynamic "routing_rule" {
     for_each = var.settings.routing_rule
 
