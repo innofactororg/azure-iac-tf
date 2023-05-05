@@ -19,7 +19,7 @@ resource "azurerm_frontdoor" "frontdoor" {
 
   backend_pool_settings {
     enforce_backend_pools_certificate_name_check = try(var.settings.certificate_name_check, false)
-    backend_pools_send_receive_timeout_seconds = 60
+    backend_pools_send_receive_timeout_seconds = try(var.settings.backend_pools_send_receive_timeout_seconds, 60)
   }
   dynamic "routing_rule" {
     for_each = var.settings.routing_rule
@@ -65,7 +65,6 @@ resource "azurerm_frontdoor" "frontdoor" {
     }
   }
 
-  backend_pools_send_receive_timeout_seconds = try(var.settings.backend_pools_send_receive_timeout_seconds, 60)
   load_balancer_enabled                      = try(var.settings.load_balancer_enabled, true)
   friendly_name                              = try(var.settings.backend_pool.name, null)
 
