@@ -40,4 +40,3 @@ variable "run_playbook" {
 }
 
 
-
