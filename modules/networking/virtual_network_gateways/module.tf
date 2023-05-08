@@ -78,7 +78,6 @@ resource "azurerm_virtual_network_gateway" "vngw" {
         apipa_addresses = try(var.settings.bgp_settings.peering_address, null)
         ip_configuration_name = try(var.settings.bgp_settings.peering_address, null)
       }
-      bgp_peering_address = bgp_settings.value.peering_address 
       peer_weight = bgp_settings.value.peer_weight
     }
   }
