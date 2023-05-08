@@ -379,7 +379,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "nodepools" {
   name                   = each.value.name
   kubernetes_cluster_id  = azurerm_kubernetes_cluster.aks.id
   vm_size                = each.value.vm_size
-  availability_zones     = try(each.value.availability_zones, null)
+  zones     = try(each.value.availability_zones, null)
   enable_auto_scaling    = try(each.value.enable_auto_scaling, false)
   enable_host_encryption = try(each.value.enable_host_encryption, false)
   enable_node_public_ip  = try(each.value.enable_node_public_ip, false)

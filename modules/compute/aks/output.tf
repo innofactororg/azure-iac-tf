@@ -49,5 +49,5 @@ output "private_fqdn" {
 }
 
 output "addon_profile" {
-  value = azurerm_kubernetes_cluster.aks.addon_profile
+  value = var.settings.addon_profile
 }
