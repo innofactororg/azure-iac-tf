@@ -115,7 +115,7 @@ locals {
     vmware_clusters                                = try(local.combined_objects_vmware_clusters, null)
     vmware_express_route_authorizations            = try(local.combined_objects_vmware_express_route_authorizations, null)
     vmware_private_clouds                          = try(local.combined_objects_vmware_private_clouds, null)
-    vpn_gateway_connections                        = try(local.combined_objects_vpn_gateway_connections, null)
+    # vpn_gateway_connections                        = try(local.combined_objects_vpn_gateway_connections, null)
     vpn_sites                                      = try(local.combined_objects_vpn_sites, null)
     wvd_application_groups                         = try(local.combined_objects_wvd_application_groups, null)
     wvd_applications                               = try(local.combined_objects_wvd_applications, null)
