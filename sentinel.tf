@@ -96,6 +96,7 @@ module "sentinel_ar_scheduled" {
   trigger_threshold          = try(each.value.trigger_threshold, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerThreshold"], null)
   display_name_format        = try(each.value.display_name_format, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["alertDetailsOverride"].alertDisplayNameFormat,null)
   entity_mappings                = try(each.value.entityMappings, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"], null)
+  alert_rule_template_version = try(each.value.alert_rule_template_version, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["templateVersion"], null)
 }
 
 module "sentinel_dc_aad" {
