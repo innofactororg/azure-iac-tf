@@ -60,3 +60,9 @@ variable "display_name_format" {
 variable "entity_mappings" {
   default = null
 }
+
+variable "alert_rule_template_version" {
+  default = null
+}
+
+

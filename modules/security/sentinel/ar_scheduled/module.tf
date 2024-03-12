@@ -1,19 +1,20 @@
 resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
-  name                       = var.name
-  log_analytics_workspace_id = lower(var.log_analytics_workspace_id)
-  display_name               = var.display_name
-  severity                   = var.severity
-  query                      = var.query
-  alert_rule_template_guid   = var.alert_rule_template_guid
-  description                = var.description
-  enabled                    = var.enabled
-  query_frequency            = var.query_frequency
-  query_period               = var.query_period
-  suppression_duration       = var.suppression_duration
-  suppression_enabled        = var.suppression_enabled
-  tactics                    = var.tactics
-  trigger_operator           = var.trigger_operator
-  trigger_threshold          = var.trigger_threshold
+  name                        = var.name
+  log_analytics_workspace_id  = lower(var.log_analytics_workspace_id)
+  display_name                = var.display_name
+  severity                    = var.severity
+  query                       = var.query
+  alert_rule_template_guid    = var.alert_rule_template_guid
+  alert_rule_template_version = var.alert_rule_template_version
+  description                 = var.description
+  enabled                     = var.enabled
+  query_frequency             = var.query_frequency
+  query_period                = var.query_period
+  suppression_duration        = var.suppression_duration
+  suppression_enabled         = var.suppression_enabled
+  tactics                     = var.tactics
+  trigger_operator            = var.trigger_operator
+  trigger_threshold           = var.trigger_threshold
 
   dynamic "event_grouping" {
     for_each = lookup(var.settings, "event_grouping", {}) != {} ? [1] : []
