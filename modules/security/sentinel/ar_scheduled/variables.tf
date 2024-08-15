@@ -38,6 +38,9 @@ variable "suppression_enabled" {
 variable "tactics" {
   default = null
 }
+variable "techniques" {
+  default = null
+}
 variable "trigger_operator" {
   default = null
 }

@@ -98,6 +98,7 @@ module "sentinel_ar_scheduled" {
   suppression_duration       = try(each.value.suppression_duration, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["suppressionDuration"], "PT5H")
   suppression_enabled        = try(each.value.suppression_enabled, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["suppressionEnabled"], false)
   tactics                    = try(each.value.tactics, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["tactics"], null)
+  techniques                 = try(each.value.techniques, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["techniques"], null)
   trigger_operator           = try(each.value.trigger_operator, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerOperator"], null)
   trigger_threshold          = try(each.value.trigger_threshold, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerThreshold"], null)
   display_name_format        = try(each.value.display_name_format, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["alertDetailsOverride"].alertDisplayNameFormat,null)

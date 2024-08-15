@@ -15,6 +15,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
   suppression_duration        = var.suppression_duration
   suppression_enabled         = var.suppression_enabled
   tactics                     = var.tactics
+  techniques                  = var.techniques
   trigger_operator            = var.trigger_operator
   trigger_threshold           = var.trigger_threshold
 
