@@ -11,7 +11,7 @@ module "batch_accounts" {
   location            = can(local.global_settings.regions[each.value.region]) ? local.global_settings.regions[each.value.region] : local.combined_objects_resource_groups[try(each.value.resource_group.lz_key, local.client_config.landingzone_key)][try(each.value.resource_group.key, each.value.resource_group_key)].location
   keyvault            = try(local.combined_objects_keyvaults[try(each.value.keyvault.lz_key, local.client_config.landingzone_key)][each.value.keyvault.key], null)
   key_vault_key_id    = try(local.combined_objects_keyvault_keys[try(each.value.keyvault_key.lz_key, local.client_config.landingzone_key)][try(each.value.key_vault_key_key, each.value.key_vault_key.key)].id, null)
-  storage_account_id  = try(module.storage_accounts[each.value.storage_account_key].id, null)
+  # storage_account_id  = try(module.storage_accounts[each.value.storage_account_key].id, null)
   resource_groups     = local.combined_objects_resource_groups
   vnets               = local.combined_objects_networking
   private_dns         = local.combined_objects_private_dns
