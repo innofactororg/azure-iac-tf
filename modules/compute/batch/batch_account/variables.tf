@@ -20,9 +20,9 @@ variable "keyvault" {
 variable "key_vault_key_id" {
   default = null
 }
-variable "storage_account_id" {
-  default = null
-}
+# variable "storage_account_id" {
+#   default = null
+# }
 variable "managed_identities" {
   default = {}
 }
