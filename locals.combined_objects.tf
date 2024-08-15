@@ -32,7 +32,7 @@ locals {
   combined_objects_backup_vault_instances                         = merge(tomap({ (local.client_config.landingzone_key) = local.backup_vault_instances }), try(var.remote_objects.backup_vault_instances, {}))
   combined_objects_backup_vault_policies                          = merge(tomap({ (local.client_config.landingzone_key) = local.backup_vault_policies }), try(var.remote_objects.backup_vault_policies, {}))
   combined_objects_backup_vaults                                  = merge(tomap({ (local.client_config.landingzone_key) = module.backup_vaults }), try(var.remote_objects.backup_vaults, {}))
-  combined_objects_batch_accounts                                 = merge(tomap({ (local.client_config.landingzone_key) = module.batch_accounts }), try(var.remote_objects.batch_accounts, {}))
+  # combined_objects_batch_accounts                                 = merge(tomap({ (local.client_config.landingzone_key) = module.batch_accounts }), try(var.remote_objects.batch_accounts, {}))
   combined_objects_batch_applications                             = merge(tomap({ (local.client_config.landingzone_key) = module.batch_applications }), try(var.remote_objects.batch_applications, {}))
   combined_objects_batch_certificates                             = merge(tomap({ (local.client_config.landingzone_key) = module.batch_certificates }), try(var.remote_objects.batch_certificates, {}))
   combined_objects_batch_jobs                                     = merge(tomap({ (local.client_config.landingzone_key) = module.batch_jobs }), try(var.remote_objects.batch_jobs, {}))
