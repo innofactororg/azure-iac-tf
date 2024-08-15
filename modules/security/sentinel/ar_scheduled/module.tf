@@ -1,3 +1,5 @@
+
+
 resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
   name                        = var.name
   log_analytics_workspace_id  = lower(var.log_analytics_workspace_id)
@@ -23,6 +25,8 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
       aggregation_method = lookup(var.settings.event_grouping, "aggregation_method", null)
     }
   }
+
+ 
 
   dynamic "incident_configuration" {
     for_each = lookup(var.settings, "incident_configuration", {}) != {} ? [1] : []

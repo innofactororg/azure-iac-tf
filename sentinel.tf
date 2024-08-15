@@ -74,11 +74,17 @@ module "sentinel_ar_ms_security_incidents" {
   display_name_exclude_filter = try(each.value.display_name_exclude_filter, null)
 }
 
+resource "random_uuid" "testuuid" {
+  for_each = try(local.security.sentinel_ar_scheduled, {})
+}
+
+
 module "sentinel_ar_scheduled" {
   source   = "./modules/security/sentinel/ar_scheduled"
   for_each = try(local.security.sentinel_ar_scheduled, {})
 
-  name                       = try(each.value.name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["id"], yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name )
+  # name                     = try(each.value.name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["id"], yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name )
+  name                       = random_uuid.testuuid[each.key].result
   display_name = try(each.value.display_name, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["name"],each.value.name)
   settings                   = each.value
   log_analytics_workspace_id = can(each.value.diagnostic_log_analytics_workspace) || can(each.value.log_analytics_workspace.id) ? try(local.combined_diagnostics.log_analytics[each.value.diagnostic_log_analytics_workspace.key].id, each.value.log_analytics_workspace.id) : local.combined_objects_log_analytics[try(each.value.log_analytics_workspace.lz_key, local.client_config.landingzone_key)][each.value.log_analytics_workspace.key].id
@@ -95,7 +101,7 @@ module "sentinel_ar_scheduled" {
   trigger_operator           = try(each.value.trigger_operator, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerOperator"], null)
   trigger_threshold          = try(each.value.trigger_threshold, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["triggerThreshold"], null)
   display_name_format        = try(each.value.display_name_format, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["alertDetailsOverride"].alertDisplayNameFormat,null)
-  entity_mappings                = try(each.value.entityMappings, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"], null)
+  entity_mappings            = try(each.value.entityMappings, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["entityMappings"], null)
   alert_rule_template_version = try(each.value.alert_rule_template_version, yamldecode(file("${path.cwd}/${each.value.definition_file}"))["properties"]["templateVersion"], null)
 }
 
