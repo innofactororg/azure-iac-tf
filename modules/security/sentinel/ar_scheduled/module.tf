@@ -18,6 +18,11 @@ resource "azurerm_sentinel_alert_rule_scheduled" "scheduled" {
   techniques                  = var.techniques
   trigger_operator            = var.trigger_operator
   trigger_threshold           = var.trigger_threshold
+  lifecycle {
+    ignore_changes = [
+      name
+    ]
+  }
 
   dynamic "event_grouping" {
     for_each = lookup(var.settings, "event_grouping", {}) != {} ? [1] : []
